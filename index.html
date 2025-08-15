@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciador de Ordens de Serviço</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 20px 10%;
+            /* Margens laterais de 10% */
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        button {
+            background: #1976d2;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #map {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+
+        #controls {
+            margin-top: 10px;
+            background: #f0f0f0;
+            padding: 5px;
+        }
+
+        /* Estilo do popup */
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 200px;
+        }
+
+        .ol-popup:after,
+        .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+            color: #666;
+        }
+
+        .ol-popup-closer:after {
+            content: "✖";
+        }
+
+        .os-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .os-date {
+            font-size: 12px;
+            color: gray;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 5%;
+                /* Margens menores em telas pequenas */
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+</head>
+
+<body>
+
+    <h1>Russas - Ordens de Serviço</h1>
+    <h2>Visão Geral</h2>
+
+    <table id="osTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Classificação</th>
+                <th>Descrição</th>
+                <th>Status</th>
+                <th>Data Criação</th>
+                <th>Inspeção</th>
+                <th>Início</th>
+                <th>Término</th>
+                <th>Conclusão</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="map"></div>
+    <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content">
+            <div class="os-title" id="osTipo"></div>
+            <div class="os-date" id="osData"></div>
+            <div id="osDescricao"></div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <label>Camada:
+            <select id="layerSelect">
+                <option value="osm">OpenStreetMap</option>
+                <option value="g_roadmap">Google Maps - Rua</option>
+                <option value="g_satellite">Google Maps - Satélite</option>
+                <option value="g_hybrid">Google Maps - Híbrido</option>
+                <option value="g_terrain">Google Maps - Terreno</option>
+            </select>
+        </label>
+    </div>
+
+    <script>
+        const ordens = [
+            { id: 1, classificacao: "TAPA BURACO", descricao: "Buraco em via pública", status: "NOVO", criacao: "06/07/25", inspecao: "", inicio: "", termino: "", conclusao: "", coords: [-37.964693, -4.939801] },
+            { id: 2, classificacao: "MANUTENÇÃO DE HIDRANTES", descricao: "Hidrante quebrado", status: "EM ANDAMENTO", criacao: "06/07/25", inspecao: "07/07/25", inicio: "08/07/25", termino: "", conclusao: "", coords: [-37.963, -4.94] },
+            { id: 3, classificacao: "PODA E REMOÇÃO DE ÁRVORES", descricao: "Poda de Árvore", status: "AGUARDANDO INSPEÇÃO", criacao: "06/07/25", inspecao: "", inicio: "", termino: "", conclusao: "", coords: [-37.962, -4.938] }
+        ];
+
+        // Preenche tabela
+        function renderTabela() {
+            const tbody = document.querySelector("#osTable tbody");
+            tbody.innerHTML = "";
+            ordens.forEach(os => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+            <td>${os.id}</td>
+            <td>${os.classificacao}</td>
+            <td>${os.descricao}</td>
+            <td>${os.status}</td>
+            <td>${os.criacao}</td>
+            <td>${os.inspecao}</td>
+            <td>${os.inicio}</td>
+            <td>${os.termino}</td>
+            <td>${os.conclusao}</td>
+            <td><button onclick="centralizarMapa(${os.coords[0]}, ${os.coords[1]})">Ver no mapa</button></td>
+        `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Cria camada base
+        function createLayer(type) {
+            switch (type) {
+                case "osm":
+                    return new ol.layer.Tile({ source: new ol.source.OSM() });
+                case "g_roadmap":
+                    return new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}' }) });
+                case "g_satellite":
+                    return new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' }) });
+                case "g_hybrid":
+                    return new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}' }) });
+                case "g_terrain":
+                    return new ol.layer.Tile({ source: new ol.source.XYZ({ url: 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}' }) });
+            }
+        }
+
+        let currentLayer = createLayer("osm");
+
+        // Cria features
+        const features = ordens.map(os => new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
+            osData: os
+        }));
+
+        // Estilo por status
+        function styleFunction(feature) {
+            const os = feature.get("osData");
+            let color = "yellow";
+            if (os.status === "EM ANDAMENTO") color = "blue";
+            if (os.status === "AGUARDANDO INSPEÇÃO") color = "green";
+
+            return new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 7,
+                    fill: new ol.style.Fill({ color: color }),
+                    stroke: new ol.style.Stroke({ color: "black", width: 1 })
+                })
+            });
+        }
+
+        const vectorSource = new ol.source.Vector({ features });
+        const vectorLayer = new ol.layer.Vector({ source: vectorSource, style: styleFunction });
+
+        const map = new ol.Map({
+            target: 'map',
+            layers: [currentLayer, vectorLayer],
+            view: new ol.View({
+                center: ol.proj.fromLonLat(ordens[0].coords),
+                zoom: 15
+            })
+        });
+
+        // Configuração do popup
+        const container = document.getElementById('popup');
+        const content = document.getElementById('popup-content');
+        const closer = document.getElementById('popup-closer');
+
+        // Fechar popup ao clicar no botão de fechar
+        closer.onclick = function () {
+            overlay.setPosition(undefined);
+            closer.blur();
+            return false;
+        };
+
+        const overlay = new ol.Overlay({
+            element: container,
+            autoPan: {
+                animation: {
+                    duration: 250
+                }
+            }
+        });
+        map.addOverlay(overlay);
+
+        // Centraliza no ponto
+        function centralizarMapa(lon, lat) {
+            const coord = ol.proj.fromLonLat([lon, lat]);
+            map.getView().setCenter(coord);
+            map.getView().setZoom(17);
+
+            // Mostra o popup automaticamente
+            const feature = vectorSource.getFeatures().find(f => {
+                const geometry = f.getGeometry();
+                return geometry.getCoordinates()[0] === coord[0] &&
+                    geometry.getCoordinates()[1] === coord[1];
+            });
+
+            if (feature) {
+                showPopup(feature, coord);
+            }
+        }
+
+        // Mostra popup com informações
+        function showPopup(feature, coord) {
+            const os = feature.get("osData");
+            document.getElementById('osTipo').textContent = os.classificacao;
+            document.getElementById('osData').textContent = "Data: " + os.criacao;
+            document.getElementById('osDescricao').textContent = os.descricao;
+
+            overlay.setPosition(coord);
+        }
+
+        // Clique no ponto para abrir popup
+        map.on('singleclick', function (evt) {
+            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+            if (feature) {
+                const coord = evt.coordinate;
+                showPopup(feature, coord);
+            } else {
+                overlay.setPosition(undefined);
+            }
+        });
+
+        document.getElementById("layerSelect").addEventListener("change", function () {
+            map.removeLayer(currentLayer);
+            currentLayer = createLayer(this.value);
+            map.getLayers().insertAt(0, currentLayer);
+        });
+
+        renderTabela();
+    </script>
+
+</body>
+
+</html>
