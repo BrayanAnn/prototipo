@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes da Nova OS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+            padding: 20px 10%;
+            box-sizing: border-box;
+        }
+
+        h1, h2 {
+            margin-bottom: 10px;
+        }
+
+        .detalhes {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .detalhes h3 {
+            margin-top: 0;
+        }
+
+        .fotos {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .fotos img {
+            width: 180px;
+            height: 120px;
+            object-fit: cover;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 8px 14px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+
+        .btn-aprovar {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .btn-cancelar {
+            background: #c62828;
+            color: white;
+        }
+
+        #map {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+        }
+
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            min-width: 200px;
+        }
+
+        .ol-popup:after,
+        .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+            color: #666;
+        }
+
+        .ol-popup-closer:after {
+            content: "✖";
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 5%;
+            }
+
+            .fotos {
+                flex-direction: column;
+            }
+
+            .fotos img {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+</head>
+
+<body>
+
+    <h1>Russas - Ordens de Serviço</h1>
+    <h2>Detalhes da Nova OS</h2>
+
+    <div class="detalhes">
+        <h3>OS 8 - Bueiro Entupido</h3>
+        <p><b>Descrição:</b> Bueiro completamente entupido, risco de alagamento.</p>
+        <p><b>Data Criação:</b> 15/08/2025</p>
+
+        <div class="fotos">
+            <img src="https://via.placeholder.com/180x120.png?text=Foto+1" alt="Foto 1">
+            <img src="https://via.placeholder.com/180x120.png?text=Foto+2" alt="Foto 2">
+        </div>
+
+        <button class="btn-aprovar" onclick="aprovar()">✔ Aprovar</button>
+        <button class="btn-cancelar" onclick="cancelar()">✖ Cancelar</button>
+    </div>
+
+    <div id="map"></div>
+    <div id="popup" class="ol-popup">
+        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+        <div id="popup-content"></div>
+    </div>
+
+    <script>
+        // Exemplo de OS
+        const os = {
+            id: 8,
+            descricao: "Bueiro completamente entupido, risco de alagamento.",
+            criacao: "15/08/2025",
+            coords: [-37.968, -4.941]
+        };
+
+        // Camada base
+        let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+
+        const feature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
+            osData: os
+        });
+
+        const vectorSource = new ol.source.Vector({ features: [feature] });
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 7,
+                    fill: new ol.style.Fill({ color: "orange" }),
+                    stroke: new ol.style.Stroke({ color: "black", width: 1 })
+                })
+            })
+        });
+
+        const map = new ol.Map({
+            target: 'map',
+            layers: [currentLayer, vectorLayer],
+            view: new ol.View({
+                center: ol.proj.fromLonLat(os.coords),
+                zoom: 17
+            })
+        });
+
+        // Popup
+        const container = document.getElementById('popup');
+        const closer = document.getElementById('popup-closer');
+        const overlay = new ol.Overlay({
+            element: container,
+            autoPan: { animation: { duration: 250 } }
+        });
+        map.addOverlay(overlay);
+
+        closer.onclick = function () {
+            overlay.setPosition(undefined);
+            closer.blur();
+            return false;
+        };
+
+        map.on('singleclick', function (evt) {
+            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+            if (feature) {
+                const coord = evt.coordinate;
+                document.getElementById('popup-content').innerHTML = `
+                    <b>OS ${os.id}</b><br>
+                    ${os.descricao}<br>
+                    Data: ${os.criacao}
+                `;
+                overlay.setPosition(coord);
+            } else {
+                overlay.setPosition(undefined);
+            }
+        });
+
+        function aprovar() {
+            alert("OS " + os.id + " aprovada!");
+            // redirecionar para tela G futuramente
+        }
+
+        function cancelar() {
+            alert("OS " + os.id + " cancelada!");
+            // redirecionar para tela B futuramente
+        }
+    </script>
+
+</body>
+</html>

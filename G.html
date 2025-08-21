@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>OS Aprovadas/Em Andamento</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
+  <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { color: #333; }
+    #map {
+      width: 100%;
+      height: 400px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    table th {
+      background: #007bff;
+      color: #fff;
+    }
+    button {
+      margin: 0 2px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .detalhes { background: #17a2b8; }
+    .rota { background: #007bff; }
+    .concluir { background: #28a745; }
+  </style>
+</head>
+<body>
+  <h1>Ordens de Serviço Aprovadas/Em Andamento</h1>
+
+  <div id="map"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Descrição</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="osTable"></tbody>
+  </table>
+
+  <script>
+    // Mock de OS fictícias
+    const ordens = [
+      { id: 1, descricao: "Troca de lâmpada", status: "Aprovada", coords: [-51.2177, -30.0346] }, // Porto Alegre
+      { id: 2, descricao: "Reparo em calçada", status: "Em Andamento", coords: [-51.209, -30.045] },
+      { id: 3, descricao: "Limpeza de bueiro", status: "Aprovada", coords: [-51.225, -30.03] }
+    ];
+
+    // Inicializa mapa
+    const map = new ol.Map({
+      target: 'map',
+      layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([-51.2177, -30.0346]),
+        zoom: 13
+      })
+    });
+
+    // Camada de marcadores
+    const markerSource = new ol.source.Vector();
+    const markerLayer = new ol.layer.Vector({ source: markerSource });
+    map.addLayer(markerLayer);
+
+    // Camada de rotas
+    const routeSource = new ol.source.Vector();
+    const routeLayer = new ol.layer.Vector({
+      source: routeSource,
+      style: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+          color: '#ff0000',
+          width: 3
+        })
+      })
+    });
+    map.addLayer(routeLayer);
+
+    // Renderiza tabela e marcadores
+    const tbody = document.getElementById("osTable");
+    ordens.forEach(os => {
+      // Linha da tabela
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${os.id}</td>
+        <td>${os.descricao}</td>
+        <td>${os.status}</td>
+        <td>
+          <button class="detalhes" onclick="mostrarDetalhes(${os.id})">Detalhes</button>
+          <button class="rota" onclick="mostrarRota(${os.id})">Rota</button>
+          <button class="concluir" onclick="concluirOS(${os.id})">Concluir</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+
+      // Marcador no mapa
+      const marker = new ol.Feature({
+        geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
+        osId: os.id
+      });
+      marker.setStyle(new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 7,
+          fill: new ol.style.Fill({ color: '#007bff' }),
+          stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
+        })
+      }));
+      markerSource.addFeature(marker);
+    });
+
+    // Funções
+    function mostrarDetalhes(id) {
+      const os = ordens.find(o => o.id === id);
+      alert(`Detalhes da OS ${os.id}:\nDescrição: ${os.descricao}\nStatus: ${os.status}`);
+    }
+
+    function mostrarRota(id) {
+      routeSource.clear();
+      // Simulação: rota entre todas as OS, ignorando só a concluída
+      const coords = ordens.map(o => ol.proj.fromLonLat(o.coords));
+      if (coords.length > 1) {
+        const line = new ol.geom.LineString(coords);
+        routeSource.addFeature(new ol.Feature({ geometry: line }));
+        map.getView().fit(line, { padding: [50, 50, 50, 50], duration: 1000 });
+      }
+    }
+
+    function concluirOS(id) {
+      const os = ordens.find(o => o.id === id);
+      os.status = "Concluída";
+      alert(`OS ${id} concluída com sucesso!`);
+      tbody.innerHTML = "";
+      markerSource.clear();
+      ordens.forEach(o => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${o.id}</td>
+          <td>${o.descricao}</td>
+          <td>${o.status}</td>
+          <td>
+            <button class="detalhes" onclick="mostrarDetalhes(${o.id})">Detalhes</button>
+            <button class="rota" onclick="mostrarRota(${o.id})">Rota</button>
+            <button class="concluir" onclick="concluirOS(${o.id})">Concluir</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // Atualiza marcador
+        const marker = new ol.Feature({
+          geometry: new ol.geom.Point(ol.proj.fromLonLat(o.coords))
+        });
+        marker.setStyle(new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: 7,
+            fill: new ol.style.Fill({ color: o.status === "Concluída" ? "#28a745" : "#007bff" }),
+            stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
+          })
+        }));
+        markerSource.addFeature(marker);
+      });
+    }
+  </script>
+</body>
+</html>
