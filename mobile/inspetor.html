@@ -15,6 +15,11 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -103,7 +108,7 @@
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-  width: 100%;
+        width: 100%;
         background: #e0e0e0;
       }
       .actions {
@@ -185,6 +190,18 @@
       <!-- Rotas -->
       <section id="rotas" class="active">
         <div class="card">
+          <h3><i class="fa-solid fa-route"></i> Mapa</h3>
+          <div
+            id="map"
+            style="
+              width: 100%;
+              height: 300px;
+              margin-bottom: 15px;
+              border-radius: 10px;
+            "
+          ></div>
+        </div>
+        <div class="card">
           <h3><i class="fa-solid fa-route"></i> Rotas de OS</h3>
           <p>
             Selecione uma ordem de serviço para visualizar detalhes e
@@ -256,6 +273,12 @@
             div.style.cursor = 'pointer';
             div.innerHTML = `<b>OS ${os.id}</b> - ${os.descricao}<br><span style='font-size:13px;color:#888;'>${os.coordenadas}</span>`;
             div.onclick = () => {
+              if (
+                window.map &&
+                typeof map.centralizarOS === 'function'
+              ) {
+                map.centralizarOS(os);
+              }
               selected = os;
               mostrarPagina('detalhes');
               renderOSDetalhes();
@@ -265,6 +288,15 @@
         if (osList.innerHTML === '')
           osList.innerHTML =
             '<p style="color:#888;">Nenhuma OS pendente.</p>';
+        // Garante mapa renderizado apenas se a seção rotas está ativa e visível
+        const rotasSection = document.getElementById('rotas');
+        if (
+          rotasSection &&
+          rotasSection.classList.contains('active') &&
+          document.getElementById('map')
+        ) {
+          setTimeout(() => inicializarMapaOL(), 0);
+        }
       }
 
       function renderOSDetalhes() {
@@ -280,17 +312,12 @@
                 <p><b>Descrição:</b> ${selected.descricao}</p>
                 <div class="os-images">
                     ${selected.fotos
-                      .map((f) => `<img src="${f}" alt="foto">`)
+                      .map(
+                        (f) => `<img src="assets/${f}" alt="foto">`
+                      )
                       .join('')}
                 </div>
                 <p><b>Coordenadas:</b> ${selected.coordenadas}</p>
-            <div class="map"><iframe id="gmap" width="100%" height="220" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
-      .map iframe {
-        display: block;
-        width: 100%;
-        height: 220px;
-        border: 0;
-      }
                 ${
                   selected.status === 'pendente'
                     ? `
@@ -302,25 +329,134 @@
                 }
                 <div style="margin-top:10px;"><button onclick="mostrarPagina('rotas')" style="background:#eee;color:#0077cc;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;"><i class='fa-solid fa-arrow-left'></i> Voltar</button></div>
             `;
-        setTimeout(() => renderGoogleMap(), 100);
+        // Esconde popup do mapa se existir
+        const popupEl = document.getElementById('ol-popup');
+        if (popupEl) popupEl.style.display = 'none';
       }
-      function renderGoogleMap() {
-        if (!selected) return;
-        const coords = selected.coordenadas
-          .split(',')
-          .map((s) => parseFloat(s.trim()));
-        if (
-          !coords ||
-          coords.length !== 2 ||
-          isNaN(coords[0]) ||
-          isNaN(coords[1])
-        )
-          return;
-        const lat = coords[0];
-        const lng = coords[1];
-        const url = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
-        const iframe = document.getElementById('gmap');
-        if (iframe) iframe.src = url;
+      // --- OpenLayers MAPA ---
+      let map, vectorSource, overlay;
+      let popupOverlay;
+      function inicializarMapaOL() {
+        if (map) {
+          map.setTarget(null);
+          map = null;
+        }
+        // Cria features das OS
+        const features = ordens.map((os) => {
+          const coords = os.coordenadas
+            .split(',')
+            .map((s) => parseFloat(s.trim()));
+          return new ol.Feature({
+            geometry: new ol.geom.Point(
+              ol.proj.fromLonLat([coords[1], coords[0]])
+            ),
+            osData: os,
+          });
+        });
+        function styleFunction(feature) {
+          const os = feature.get('osData');
+          let color = '#ff9800';
+          if (os.status === 'aprovada') color = '#4caf50';
+          return new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 7,
+              fill: new ol.style.Fill({ color }),
+              stroke: new ol.style.Stroke({
+                color: 'white',
+                width: 2,
+              }),
+            }),
+          });
+        }
+        vectorSource = new ol.source.Vector({ features });
+        const vectorLayer = new ol.layer.Vector({
+          source: vectorSource,
+          style: styleFunction,
+        });
+        map = new ol.Map({
+          target: 'map',
+          layers: [
+            new ol.layer.Tile({ source: new ol.source.OSM() }),
+            vectorLayer,
+          ],
+          view: new ol.View({
+            center: ol.proj.fromLonLat([-46.64, -23.56]),
+            zoom: 13,
+          }),
+        });
+        // Popup customizado
+        let popupEl = document.getElementById('ol-popup');
+        if (!popupEl) {
+          popupEl = document.createElement('div');
+          popupEl.id = 'ol-popup';
+          popupEl.style.position = 'absolute';
+          popupEl.style.background = 'white';
+          popupEl.style.padding = '10px 16px';
+          popupEl.style.borderRadius = '10px';
+          popupEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+          popupEl.style.border = '1px solid #ccc';
+          popupEl.style.minWidth = '180px';
+          popupEl.style.pointerEvents = 'auto';
+          popupEl.style.display = 'none';
+          popupEl.innerHTML =
+            '<span id="ol-popup-close" style="position:absolute;top:4px;right:10px;cursor:pointer;font-size:16px;color:#888;">&times;</span><div id="ol-popup-content"></div>';
+          document.body.appendChild(popupEl);
+        }
+        popupOverlay = new ol.Overlay({
+          element: popupEl,
+          autoPan: { animation: { duration: 250 } },
+        });
+        map.addOverlay(popupOverlay);
+        document.getElementById('ol-popup-close').onclick =
+          function () {
+            popupOverlay.setPosition(undefined);
+            popupEl.style.display = 'none';
+          };
+        // Clique no marcador
+        map.on('singleclick', function (evt) {
+          const feature = map.forEachFeatureAtPixel(
+            evt.pixel,
+            (f) => f
+          );
+          if (feature) {
+            const os = feature.get('osData');
+            const coord = feature.getGeometry().getCoordinates();
+            document.getElementById(
+              'ol-popup-content'
+            ).innerHTML = `<b>OS ${os.id}</b><br>${os.descricao}<br><span style='font-size:12px;color:#888;'>${os.coordenadas}</span>`;
+            popupOverlay.setPosition(coord);
+            popupEl.style.display = 'block';
+          } else {
+            popupOverlay.setPosition(undefined);
+            popupEl.style.display = 'none';
+          }
+        });
+        // Fecha popup ao clicar fora
+        map.on('movestart', function () {
+          popupOverlay.setPosition(undefined);
+          popupEl.style.display = 'none';
+        });
+        // Permite centralizar e abrir popup via função
+        map.centralizarOS = function (os) {
+          const coords = os.coordenadas
+            .split(',')
+            .map((s) => parseFloat(s.trim()));
+          const coord = ol.proj.fromLonLat([coords[1], coords[0]]);
+          map.getView().setCenter(coord);
+          map.getView().setZoom(16);
+          // Busca feature
+          const feature = vectorSource.getFeatures().find((f) => {
+            const c = f.getGeometry().getCoordinates();
+            return c[0] === coord[0] && c[1] === coord[1];
+          });
+          if (feature) {
+            document.getElementById(
+              'ol-popup-content'
+            ).innerHTML = `<b>OS ${os.id}</b><br>${os.descricao}<br><span style='font-size:12px;color:#888;'>${os.coordenadas}</span>`;
+            popupOverlay.setPosition(coord);
+            popupEl.style.display = 'block';
+          }
+        };
       }
 
       function renderOSAprovadas() {
@@ -389,7 +525,9 @@
           document
             .querySelectorAll('nav button')[1]
             .classList.add('active');
-        if (pagina === 'rotas') renderOSList();
+        if (pagina === 'rotas') {
+          renderOSList();
+        }
         if (pagina === 'aprovadas') renderOSAprovadas();
         if (pagina === 'detalhes') renderOSDetalhes();
       }
