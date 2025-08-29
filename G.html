@@ -4,185 +4,499 @@
   <meta charset="UTF-8">
   <title>OS Aprovadas/Em Andamento</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
-  <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f5f6fa;
       margin: 0;
-      padding: 20px;
+      padding: 20px 10%;
+      box-sizing: border-box;
     }
-    h1 { color: #333; }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #1976d2;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
     #map {
       width: 100%;
       height: 400px;
-      margin-bottom: 20px;
       border: 1px solid #ccc;
+      margin-bottom: 20px;
+      border-radius: 4px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    table th, table td {
-      border: 1px solid #ccc;
-      padding: 8px;
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
       text-align: center;
     }
-    table th {
-      background: #007bff;
-      color: #fff;
+
+    th {
+      background: #1976d2;
+      color: white;
+      font-weight: 500;
     }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
     button {
-      margin: 0 2px;
-      padding: 5px 10px;
+      padding: 6px 12px;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
-      color: #fff;
-    }
-    .detalhes { background: #17a2b8; }
-    .rota { background: #007bff; }
-    .concluir { background: #28a745; }
-  </style>
-</head>
-<body>
-  <h1>Ordens de Serviço Aprovadas/Em Andamento</h1>
-
-  <div id="map"></div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Descrição</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="osTable"></tbody>
-  </table>
-
-  <script>
-    // Mock de OS fictícias
-    const ordens = [
-      { id: 1, descricao: "Troca de lâmpada", status: "Aprovada", coords: [-51.2177, -30.0346] }, // Porto Alegre
-      { id: 2, descricao: "Reparo em calçada", status: "Em Andamento", coords: [-51.209, -30.045] },
-      { id: 3, descricao: "Limpeza de bueiro", status: "Aprovada", coords: [-51.225, -30.03] }
-    ];
-
-    // Inicializa mapa
-    const map = new ol.Map({
-      target: 'map',
-      layers: [new ol.layer.Tile({ source: new ol.source.OSM() })],
-      view: new ol.View({
-        center: ol.proj.fromLonLat([-51.2177, -30.0346]),
-        zoom: 13
-      })
-    });
-
-    // Camada de marcadores
-    const markerSource = new ol.source.Vector();
-    const markerLayer = new ol.layer.Vector({ source: markerSource });
-    map.addLayer(markerLayer);
-
-    // Camada de rotas
-    const routeSource = new ol.source.Vector();
-    const routeLayer = new ol.layer.Vector({
-      source: routeSource,
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({
-          color: '#ff0000',
-          width: 3
-        })
-      })
-    });
-    map.addLayer(routeLayer);
-
-    // Renderiza tabela e marcadores
-    const tbody = document.getElementById("osTable");
-    ordens.forEach(os => {
-      // Linha da tabela
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${os.id}</td>
-        <td>${os.descricao}</td>
-        <td>${os.status}</td>
-        <td>
-          <button class="detalhes" onclick="mostrarDetalhes(${os.id})">Detalhes</button>
-          <button class="rota" onclick="mostrarRota(${os.id})">Rota</button>
-          <button class="concluir" onclick="concluirOS(${os.id})">Concluir</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-
-      // Marcador no mapa
-      const marker = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
-        osId: os.id
-      });
-      marker.setStyle(new ol.style.Style({
-        image: new ol.style.Circle({
-          radius: 7,
-          fill: new ol.style.Fill({ color: '#007bff' }),
-          stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
-        })
-      }));
-      markerSource.addFeature(marker);
-    });
-
-    // Funções
-    function mostrarDetalhes(id) {
-      const os = ordens.find(o => o.id === id);
-      alert(`Detalhes da OS ${os.id}:\nDescrição: ${os.descricao}\nStatus: ${os.status}`);
+      font-size: 14px;
+      margin: 2px;
     }
 
-    function mostrarRota(id) {
-      routeSource.clear();
-      // Simulação: rota entre todas as OS, ignorando só a concluída
-      const coords = ordens.map(o => ol.proj.fromLonLat(o.coords));
-      if (coords.length > 1) {
-        const line = new ol.geom.LineString(coords);
-        routeSource.addFeature(new ol.Feature({ geometry: line }));
-        map.getView().fit(line, { padding: [50, 50, 50, 50], duration: 1000 });
+    .detalhes {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .detalhes:hover {
+      background: #138496;
+    }
+
+    .rota {
+      background: #007bff;
+      color: white;
+    }
+
+    .rota:hover {
+      background: #0069d9;
+    }
+
+    .concluir {
+      background: #28a745;
+      color: white;
+    }
+
+    .concluir:hover {
+      background: #218838;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 15px 5%;
+      }
+      
+      table {
+        font-size: 14px;
+      }
+      
+      th, td {
+        padding: 6px;
+      }
+      
+      button {
+        padding: 4px 8px;
+        font-size: 12px;
       }
     }
 
-    function concluirOS(id) {
-      const os = ordens.find(o => o.id === id);
-      os.status = "Concluída";
-      alert(`OS ${id} concluída com sucesso!`);
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .status-EM_ANDAMENTO {
+      background: #2196f3;
+    }
+
+    .status-CONCLUIDO {
+      background: #4caf50;
+    }
+
+    .prioridade-ALTA {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
+    .prioridade-MEDIA {
+      color: #f57c00;
+      font-weight: bold;
+    }
+
+    .prioridade-BAIXA {
+      color: #388e3c;
+      font-weight: bold;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .popup-content {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .popup-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #1976d2;
+    }
+
+    .popup-detail {
+      margin-bottom: 3px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+</head>
+
+<body>
+
+  <h1>Russas - Ordens de Serviço</h1>
+  <h2>OS Aprovadas e Em Andamento</h2>
+
+  <div id="loading" class="loading">Carregando dados...</div>
+  <div id="error" class="error" style="display: none;"></div>
+  <div id="no-data" class="no-data" style="display: none;">Não há OS aprovadas ou em andamento.</div>
+
+  <div id="map"></div>
+
+  <table id="osTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Classificação</th>
+        <th>Descrição</th>
+        <th>Status</th>
+        <th>Prioridade</th>
+        <th>Data Início</th>
+        <th>Previsão Término</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="popup" class="ol-popup">
+    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <div id="popup-content" class="popup-content"></div>
+  </div>
+
+  <script>
+    // Variáveis globais
+    let ordensServico = [];
+    let ordensFiltradas = [];
+    let map;
+    let markerSource;
+    let routeSource;
+    let overlay;
+
+    // Carrega os dados do JSON
+    function carregarDados() {
+      fetch('os-data.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao carregar os dados: ' + response.status);
+          }
+          return response.json();
+        })
+        .then(data => {
+          document.getElementById('loading').style.display = 'none';
+          ordensServico = data.ordensServico;
+          
+          // Filtra apenas as OS com status "EM ANDAMENTO" ou "CONCLUÍDO"
+          ordensFiltradas = ordensServico.filter(os => 
+            os.status === "EM ANDAMENTO" || os.status === "CONCLUÍDO"
+          );
+          
+          if (ordensFiltradas.length === 0) {
+            document.getElementById('no-data').style.display = 'block';
+          } else {
+            renderTabela();
+            inicializarMapa();
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('error').textContent = error.message;
+          console.error('Erro ao carregar os dados:', error);
+        });
+    }
+
+    // Preenche tabela
+    function renderTabela() {
+      const tbody = document.querySelector("#osTable tbody");
       tbody.innerHTML = "";
-      markerSource.clear();
-      ordens.forEach(o => {
+      
+      ordensFiltradas.forEach(os => {
         const tr = document.createElement("tr");
+        
+        // Formata o status com badge colorido
+        let statusClass = "status-" + os.status.replace(/\s+/g, '_');
+        let statusHTML = `<span class="status-badge ${statusClass}">${os.status}</span>`;
+        
+        // Calcula previsão de término (simulação: 5 dias após o início)
+        let previsaoTermino = "-";
+        if (os.dataInicio) {
+          const dataInicio = new Date(os.dataInicio);
+          dataInicio.setDate(dataInicio.getDate() + 5);
+          previsaoTermino = dataInicio.toLocaleDateString('pt-BR');
+        }
+        
         tr.innerHTML = `
-          <td>${o.id}</td>
-          <td>${o.descricao}</td>
-          <td>${o.status}</td>
+          <td>${os.id}</td>
+          <td>${os.classificacao}</td>
+          <td>${os.descricao}</td>
+          <td>${statusHTML}</td>
+          <td class="prioridade-${os.prioridade}">${os.prioridade}</td>
+          <td>${formatarData(os.dataInicio)}</td>
+          <td>${previsaoTermino}</td>
           <td>
-            <button class="detalhes" onclick="mostrarDetalhes(${o.id})">Detalhes</button>
-            <button class="rota" onclick="mostrarRota(${o.id})">Rota</button>
-            <button class="concluir" onclick="concluirOS(${o.id})">Concluir</button>
+            <button class="detalhes" onclick="mostrarDetalhes(${os.id})">Detalhes</button>
+            <button class="rota" onclick="mostrarRota(${os.id})">Rota</button>
+            ${os.status !== "CONCLUÍDO" ? `<button class="concluir" onclick="concluirOS(${os.id})">Concluir</button>` : ''}
           </td>
         `;
         tbody.appendChild(tr);
+      });
+      
+      document.getElementById('osTable').style.display = 'table';
+    }
 
-        // Atualiza marcador
-        const marker = new ol.Feature({
-          geometry: new ol.geom.Point(ol.proj.fromLonLat(o.coords))
-        });
-        marker.setStyle(new ol.style.Style({
-          image: new ol.style.Circle({
-            radius: 7,
-            fill: new ol.style.Fill({ color: o.status === "Concluída" ? "#28a745" : "#007bff" }),
-            stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
+    // Formata data para exibição
+    function formatarData(dataString) {
+      if (!dataString) return '-';
+      
+      try {
+        const data = new Date(dataString);
+        return data.toLocaleDateString('pt-BR');
+      } catch (e) {
+        return dataString;
+      }
+    }
+
+    // Inicializa o mapa
+    function inicializarMapa() {
+      // Camada base
+      let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+
+      // Fonte para marcadores
+      markerSource = new ol.source.Vector();
+      
+      // Fonte para rotas
+      routeSource = new ol.source.Vector();
+      const routeLayer = new ol.layer.Vector({
+        source: routeSource,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#ff0000',
+            width: 4
           })
-        }));
-        markerSource.addFeature(marker);
+        })
+      });
+
+      // Configuração do popup
+      const container = document.getElementById('popup');
+      const closer = document.getElementById('popup-closer');
+
+      // Fechar popup ao clicar no botão de fechar
+      closer.onclick = function () {
+        overlay.setPosition(undefined);
+        closer.blur();
+        return false;
+      };
+
+      overlay = new ol.Overlay({
+        element: container,
+        autoPan: { animation: { duration: 250 } }
+      });
+
+      // Camada de marcadores
+      const markerLayer = new ol.layer.Vector({
+        source: markerSource,
+        style: function(feature) {
+          const os = feature.get('osData');
+          let color = '#2196f3'; // Azul para EM ANDAMENTO
+          
+          if (os.status === "CONCLUÍDO") color = '#4caf50'; // Verde para CONCLUÍDO
+
+          return new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 7,
+              fill: new ol.style.Fill({ color: color }),
+              stroke: new ol.style.Stroke({ color: 'white', width: 2 })
+            }),
+            text: new ol.style.Text({
+              text: os.id.toString(),
+              fill: new ol.style.Fill({ color: 'white' }),
+              stroke: new ol.style.Stroke({ color: 'black', width: 2 }),
+              offsetY: -15,
+              font: 'bold 12px Arial'
+            })
+          });
+        }
+      });
+
+      // Centro de Russas-CE (usando a primeira OS como referência)
+      const centerRussas = ordensFiltradas.length > 0 ? 
+        ordensFiltradas[0].coordenadas : [-37.9749, -4.9403];
+      
+      map = new ol.Map({
+        target: 'map',
+        layers: [currentLayer, markerLayer, routeLayer],
+        view: new ol.View({
+          center: ol.proj.fromLonLat(centerRussas),
+          zoom: 13
+        })
+      });
+
+      map.addOverlay(overlay);
+
+      // Adiciona marcadores ao mapa
+      atualizarMapa();
+
+      // Clique no ponto para abrir popup
+      map.on('singleclick', function (evt) {
+        const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+        if (feature) {
+          const os = feature.get("osData");
+          const coord = evt.coordinate;
+          
+          const popupContent = `
+            <div class="popup-title">OS ${os.id} - ${os.classificacao}</div>
+            <div class="popup-detail"><strong>Descrição:</strong> ${os.descricao}</div>
+            <div class="popup-detail"><strong>Status:</strong> ${os.status}</div>
+            <div class="popup-detail"><strong>Prioridade:</strong> ${os.prioridade}</div>
+            <div class="popup-detail"><strong>Local:</strong> ${os.localizacao}</div>
+            <div class="popup-detail"><strong>Início:</strong> ${formatarData(os.dataInicio)}</div>
+          `;
+          
+          document.getElementById('popup-content').innerHTML = popupContent;
+          overlay.setPosition(coord);
+        } else {
+          overlay.setPosition(undefined);
+        }
       });
     }
+
+    // Atualiza os marcadores no mapa
+    function atualizarMapa() {
+      // Limpa marcadores existentes
+      markerSource.clear();
+      
+      // Adiciona novos marcadores
+      ordensFiltradas.forEach(os => {
+        const marker = new ol.Feature({
+          geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coordenadas)),
+          osData: os
+        });
+        markerSource.addFeature(marker);
+      });
+      
+      // Ajusta a visualização para mostrar todos os marcadores
+      if (ordensFiltradas.length > 0) {
+        const extent = markerSource.getExtent();
+        map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 1000 });
+      }
+    }
+
+    // Mostra detalhes da OS
+    function mostrarDetalhes(id) {
+      const os = ordensFiltradas.find(o => o.id === id);
+      if (os) {
+        alert(`Detalhes da OS ${os.id}:\n\n` +
+              `Classificação: ${os.classificacao}\n` +
+              `Descrição: ${os.descricao}\n` +
+              `Status: ${os.status}\n` +
+              `Prioridade: ${os.prioridade}\n` +
+              `Localização: ${os.localizacao}\n` +
+              `Data de Criação: ${formatarData(os.dataCriacao)}\n` +
+              `Data de Início: ${formatarData(os.dataInicio)}\n` +
+              `Data de Término: ${formatarData(os.dataTermino)}`);
+      }
+    }
+
+    // Mostra rota para a OS
+    function mostrarRota(id) {
+      const os = ordensFiltradas.find(o => o.id === id);
+      if (os) {
+        // Limpa rota anterior
+        routeSource.clear();
+        
+        // Centraliza no ponto da OS
+        const coord = ol.proj.fromLonLat(os.coordenadas);
+        map.getView().setCenter(coord);
+        map.getView().setZoom(17);
+        
+        alert(`Mostrando rota para a OS ${os.id} - ${os.classificacao}\n\n` +
+              `Local: ${os.localizacao}`);
+      }
+    }
+
+    // Conclui a OS
+    function concluirOS(id) {
+      const os = ordensFiltradas.find(o => o.id === id);
+      if (os && confirm(`Deseja marcar a OS ${id} como concluída?`)) {
+        // Simulação de conclusão (em um sistema real, isso atualizaria o backend)
+        os.status = "CONCLUÍDO";
+        os.dataTermino = new Date().toISOString().split('T')[0];
+        os.dataConclusao = new Date().toISOString().split('T')[0];
+        
+        alert(`OS ${id} concluída com sucesso!`);
+        
+        // Atualiza a interface
+        renderTabela();
+        atualizarMapa();
+      }
+    }
+
+    // Inicia o carregamento dos dados
+    carregarDados();
   </script>
 </body>
 </html>

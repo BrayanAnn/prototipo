@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
-    <title>Detalhes da Nova OS</title>
+    <title>Detalhes da OS - Sistema de Zeladoria</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,39 +14,90 @@
 
         h1, h2 {
             margin-bottom: 10px;
+            color: #1976d2;
         }
 
         .detalhes {
             background: white;
-            padding: 20px;
+            padding: 25px;
+            border-radius: 8px;
             border: 1px solid #ddd;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .detalhes h3 {
             margin-top: 0;
+            color: #1976d2;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-item {
+            margin-bottom: 12px;
+            display: flex;
+        }
+
+        .info-label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #555;
+        }
+
+        .info-value {
+            flex: 1;
+        }
+
+        .prioridade-ALTA {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+
+        .prioridade-MEDIA {
+            color: #f57c00;
+            font-weight: bold;
+        }
+
+        .prioridade-BAIXA {
+            color: #388e3c;
+            font-weight: bold;
         }
 
         .fotos {
             display: flex;
-            gap: 10px;
-            margin: 10px 0;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
         }
 
         .fotos img {
-            width: 180px;
-            height: 120px;
+            width: 200px;
+            height: 150px;
             object-fit: cover;
             border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: transform 0.3s;
+        }
+
+        .fotos img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .acoes {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
         }
 
         button {
-            padding: 8px 14px;
+            padding: 10px 18px;
             border: none;
             cursor: pointer;
             font-size: 14px;
-            margin-right: 10px;
+            margin-right: 12px;
             border-radius: 4px;
+            transition: all 0.3s;
         }
 
         .btn-aprovar {
@@ -55,27 +105,46 @@
             color: white;
         }
 
+        .btn-aprovar:hover {
+            background: #1b5e20;
+        }
+
         .btn-cancelar {
             background: #c62828;
             color: white;
+        }
+
+        .btn-cancelar:hover {
+            background: #b71c1c;
+        }
+
+        .btn-voltar {
+            background: #757575;
+            color: white;
+        }
+
+        .btn-voltar:hover {
+            background: #616161;
         }
 
         #map {
             width: 100%;
             height: 400px;
             border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
 
         .ol-popup {
             position: absolute;
             background-color: white;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid #cccccc;
             bottom: 12px;
             left: -50px;
-            min-width: 200px;
+            min-width: 250px;
         }
 
         .ol-popup:after,
@@ -106,18 +175,31 @@
         .ol-popup-closer {
             text-decoration: none;
             position: absolute;
-            top: 2px;
+            top: 5px;
             right: 8px;
             color: #666;
+            font-size: 16px;
         }
 
-        .ol-popup-closer:after {
-            content: "✖";
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
         @media (max-width: 768px) {
             body {
-                padding: 20px 5%;
+                padding: 15px 5%;
             }
 
             .fotos {
@@ -127,7 +209,41 @@
             .fotos img {
                 width: 100%;
                 height: auto;
+                max-height: 200px;
             }
+            
+            .info-item {
+                flex-direction: column;
+            }
+            
+            .info-label {
+                margin-bottom: 5px;
+            }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .status-NOVO {
+            background: #ff9800;
+        }
+
+        .status-EM_ANDAMENTO {
+            background: #2196f3;
+        }
+
+        .status-AGUARDANDO_INSPECAO {
+            background: #f44336;
+        }
+
+        .status-CONCLUIDO {
+            background: #4caf50;
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
@@ -137,106 +253,265 @@
 <body>
 
     <h1>Russas - Ordens de Serviço</h1>
-    <h2>Detalhes da Nova OS</h2>
+    <h2>Detalhes da Ordem de Serviço</h2>
 
-    <div class="detalhes">
-        <h3>OS 8 - Bueiro Entupido</h3>
-        <p><b>Descrição:</b> Bueiro completamente entupido, risco de alagamento.</p>
-        <p><b>Data Criação:</b> 15/08/2025</p>
+    <div id="loading" class="loading">Carregando dados da OS...</div>
+    <div id="error" class="error" style="display: none;"></div>
 
-        <div class="fotos">
-            <img src="https://via.placeholder.com/180x120.png?text=Foto+1" alt="Foto 1">
-            <img src="https://via.placeholder.com/180x120.png?text=Foto+2" alt="Foto 2">
+    <div id="detalhes-os" style="display: none;">
+        <div class="detalhes">
+            <h3 id="os-titulo">Carregando...</h3>
+            
+            <div class="info-item">
+                <span class="info-label">Descrição:</span>
+                <span class="info-value" id="os-descricao"></span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Data Criação:</span>
+                <span class="info-value" id="os-data-criacao"></span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Localização:</span>
+                <span class="info-value" id="os-localizacao"></span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Prioridade:</span>
+                <span class="info-value" id="os-prioridade"></span>
+            </div>
+            
+            <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="info-value" id="os-status"></span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Data Inspeção:</span>
+                <span class="info-value" id="os-data-inspecao"></span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Data Início:</span>
+                <span class="info-value" id="os-data-inicio"></span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Data Término:</span>
+                <span class="info-value" id="os-data-termino"></span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Data Conclusão:</span>
+                <span class="info-value" id="os-data-conclusao"></span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Fotos:</span>
+                <div class="fotos" id="os-fotos"></div>
+            </div>
+
+            <div class="acoes">
+                <button class="btn-aprovar" onclick="aprovar()">✔ Aprovar OS</button>
+                <button class="btn-cancelar" onclick="cancelar()">✖ Recusar OS</button>
+                <button class="btn-voltar" onclick="voltar()">← Voltar</button>
+            </div>
         </div>
 
-        <button class="btn-aprovar" onclick="aprovar()">✔ Aprovar</button>
-        <button class="btn-cancelar" onclick="cancelar()">✖ Cancelar</button>
-    </div>
-
-    <div id="map"></div>
-    <div id="popup" class="ol-popup">
-        <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-        <div id="popup-content"></div>
+        <div id="map"></div>
+        <div id="popup" class="ol-popup">
+            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <div id="popup-content"></div>
+        </div>
     </div>
 
     <script>
-        // Exemplo de OS
-        const os = {
-            id: 8,
-            descricao: "Bueiro completamente entupido, risco de alagamento.",
-            criacao: "15/08/2025",
-            coords: [-37.968, -4.941]
-        };
+        // Variáveis globais
+        let osDetalhes = null;
+        let map;
+        let overlay;
 
-        // Camada base
-        let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+        // Obtém o ID da OS da URL
+        function obterIdOS() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
 
-        const feature = new ol.Feature({
-            geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
-            osData: os
-        });
-
-        const vectorSource = new ol.source.Vector({ features: [feature] });
-        const vectorLayer = new ol.layer.Vector({
-            source: vectorSource,
-            style: new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: 7,
-                    fill: new ol.style.Fill({ color: "orange" }),
-                    stroke: new ol.style.Stroke({ color: "black", width: 1 })
-                })
-            })
-        });
-
-        const map = new ol.Map({
-            target: 'map',
-            layers: [currentLayer, vectorLayer],
-            view: new ol.View({
-                center: ol.proj.fromLonLat(os.coords),
-                zoom: 17
-            })
-        });
-
-        // Popup
-        const container = document.getElementById('popup');
-        const closer = document.getElementById('popup-closer');
-        const overlay = new ol.Overlay({
-            element: container,
-            autoPan: { animation: { duration: 250 } }
-        });
-        map.addOverlay(overlay);
-
-        closer.onclick = function () {
-            overlay.setPosition(undefined);
-            closer.blur();
-            return false;
-        };
-
-        map.on('singleclick', function (evt) {
-            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
-            if (feature) {
-                const coord = evt.coordinate;
-                document.getElementById('popup-content').innerHTML = `
-                    <b>OS ${os.id}</b><br>
-                    ${os.descricao}<br>
-                    Data: ${os.criacao}
-                `;
-                overlay.setPosition(coord);
-            } else {
-                overlay.setPosition(undefined);
+        // Carrega os dados da OS específica
+        function carregarDadosOS() {
+            const osId = obterIdOS();
+            
+            if (!osId) {
+                mostrarErro("ID da OS não especificado na URL.");
+                return;
             }
-        });
 
+            fetch('os-data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar os dados: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Encontra a OS com o ID especificado
+                    osDetalhes = data.ordensServico.find(os => os.id == osId);
+                    
+                    if (!osDetalhes) {
+                        mostrarErro(`OS com ID ${osId} não encontrada.`);
+                        return;
+                    }
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    exibirDetalhesOS();
+                    inicializarMapa();
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    mostrarErro(error.message);
+                    console.error('Erro ao carregar os dados:', error);
+                });
+        }
+
+        // Exibe os detalhes da OS na página
+        function exibirDetalhesOS() {
+            document.getElementById('os-titulo').textContent = `OS ${osDetalhes.id} - ${osDetalhes.classificacao}`;
+            document.getElementById('os-descricao').textContent = osDetalhes.descricao;
+            document.getElementById('os-data-criacao').textContent = formatarData(osDetalhes.dataCriacao);
+            document.getElementById('os-localizacao').textContent = osDetalhes.localizacao;
+            document.getElementById('os-prioridade').textContent = osDetalhes.prioridade;
+            document.getElementById('os-prioridade').className = `prioridade-${osDetalhes.prioridade}`;
+            
+            // Formata o status com badge colorido
+            let statusClass = "status-" + osDetalhes.status.replace(/\s+/g, '_');
+            let statusHTML = `<span class="status-badge ${statusClass}">${osDetalhes.status}</span>`;
+            document.getElementById('os-status').innerHTML = statusHTML;
+            
+            document.getElementById('os-data-inspecao').textContent = formatarData(osDetalhes.dataInspecao);
+            document.getElementById('os-data-inicio').textContent = formatarData(osDetalhes.dataInicio);
+            document.getElementById('os-data-termino').textContent = formatarData(osDetalhes.dataTermino);
+            document.getElementById('os-data-conclusao').textContent = formatarData(osDetalhes.dataConclusao);
+            
+            // Adiciona as fotos
+            const fotosContainer = document.getElementById('os-fotos');
+            fotosContainer.innerHTML = '';
+            
+            if (osDetalhes.fotos && osDetalhes.fotos.length > 0) {
+                osDetalhes.fotos.forEach((foto, index) => {
+                    const img = document.createElement('img');
+                    img.src = foto;
+                    img.alt = `Foto ${index + 1} da OS ${osDetalhes.id}`;
+                    img.title = `Foto ${index + 1}`;
+                    fotosContainer.appendChild(img);
+                });
+            } else {
+                fotosContainer.innerHTML = '<p>Nenhuma foto disponível</p>';
+            }
+            
+            document.getElementById('detalhes-os').style.display = 'block';
+        }
+
+        // Formata data para exibição
+        function formatarData(dataString) {
+            if (!dataString) return 'Não informada';
+            
+            try {
+                const data = new Date(dataString);
+                return data.toLocaleDateString('pt-BR');
+            } catch (e) {
+                return dataString;
+            }
+        }
+
+        // Inicializa o mapa
+        function inicializarMapa() {
+            // Camada base
+            let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+
+            const feature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(osDetalhes.coordenadas)),
+                osData: osDetalhes
+            });
+
+            const vectorSource = new ol.source.Vector({ features: [feature] });
+            const vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 8,
+                        fill: new ol.style.Fill({ color: "orange" }),
+                        stroke: new ol.style.Stroke({ color: "white", width: 2 })
+                    })
+                })
+            });
+
+            map = new ol.Map({
+                target: 'map',
+                layers: [currentLayer, vectorLayer],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat(osDetalhes.coordenadas),
+                    zoom: 17
+                })
+            });
+
+            // Popup
+            const container = document.getElementById('popup');
+            const closer = document.getElementById('popup-closer');
+            overlay = new ol.Overlay({
+                element: container,
+                autoPan: { animation: { duration: 250 } }
+            });
+            map.addOverlay(overlay);
+
+            closer.onclick = function () {
+                overlay.setPosition(undefined);
+                closer.blur();
+                return false;
+            };
+
+            // Mostra o popup automaticamente
+            const coord = ol.proj.fromLonLat(osDetalhes.coordenadas);
+            document.getElementById('popup-content').innerHTML = `
+                <b>OS ${osDetalhes.id}</b><br>
+                ${osDetalhes.classificacao}<br>
+                ${osDetalhes.descricao}<br>
+                <small>Criada em: ${formatarData(osDetalhes.dataCriacao)}</small>
+            `;
+            overlay.setPosition(coord);
+        }
+
+        // Funções de ação
         function aprovar() {
-            alert("OS " + os.id + " aprovada!");
-            // redirecionar para tela G futuramente
+            if (confirm(`Deseja aprovar a OS ${osDetalhes.id}?`)) {
+                alert(`OS ${osDetalhes.id} aprovada com sucesso!`);
+                // Aqui você pode adicionar lógica para atualizar o status no JSON
+                // redirecionar para tela G futuramente
+                window.location.href = 'C.html';
+            }
         }
 
         function cancelar() {
-            alert("OS " + os.id + " cancelada!");
-            // redirecionar para tela B futuramente
+            if (confirm(`Deseja recusar a OS ${osDetalhes.id}?`)) {
+                alert(`OS ${osDetalhes.id} recusada.`);
+                // Aqui você pode adicionar lógica para atualizar o status no JSON
+                // redirecionar para tela B futuramente
+                window.location.href = 'C.html';
+            }
         }
-    </script>
 
+        function voltar() {
+            window.location.href = 'C.html';
+        }
+
+        // Mostra mensagem de erro
+        function mostrarErro(mensagem) {
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = mensagem;
+        }
+
+        // Inicia o carregamento dos dados
+        carregarDadosOS();
+    </script>
 </body>
 </html>

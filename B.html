@@ -10,12 +10,17 @@
             background: #f5f6fa;
             margin: 0;
             padding: 20px 10%;
-            /* Margens laterais de 10% */
             box-sizing: border-box;
         }
 
         h1 {
             margin-bottom: 10px;
+            color: #1976d2;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
         }
 
         table {
@@ -23,25 +28,43 @@
             border-collapse: collapse;
             margin-bottom: 20px;
             background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         th,
         td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 10px;
             text-align: center;
         }
 
         th {
-            background: #eee;
+            background: #1976d2;
+            color: white;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
         }
 
         button {
             background: #1976d2;
             color: white;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #1565c0;
         }
 
         #map {
@@ -49,12 +72,14 @@
             height: 400px;
             border: 1px solid #ccc;
             margin-bottom: 20px;
+            border-radius: 4px;
         }
 
         #controls {
             margin-top: 10px;
             background: #f0f0f0;
-            padding: 5px;
+            padding: 10px;
+            border-radius: 4px;
         }
 
         /* Estilo do popup */
@@ -67,7 +92,7 @@
             border: 1px solid #cccccc;
             bottom: 12px;
             left: -50px;
-            min-width: 200px;
+            min-width: 250px;
         }
 
         .ol-popup:after,
@@ -110,6 +135,7 @@
         .os-title {
             font-weight: bold;
             margin-bottom: 5px;
+            color: #1976d2;
         }
 
         .os-date {
@@ -118,10 +144,60 @@
             margin-bottom: 5px;
         }
 
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-NOVO {
+            background: #ff9800;
+            color: white;
+        }
+
+        .status-EM_ANDAMENTO {
+            background: #2196f3;
+            color: white;
+        }
+
+        .status-AGUARDANDO_INSPECAO {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-CONCLUIDO {
+            background: #4caf50;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             body {
-                padding: 20px 5%;
-                /* Margens menores em telas pequenas */
+                padding: 15px 5%;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 6px;
             }
         }
     </style>
@@ -134,7 +210,10 @@
     <h1>Russas - Ordens de Serviço</h1>
     <h2>Visão Geral</h2>
 
-    <table id="osTable">
+    <div id="loading" class="loading">Carregando dados...</div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <table id="osTable" style="display: none;">
         <thead>
             <tr>
                 <th>ID</th>
@@ -146,7 +225,7 @@
                 <th>Início</th>
                 <th>Término</th>
                 <th>Conclusão</th>
-                <th></th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -175,32 +254,75 @@
     </div>
 
     <script>
-        const ordens = [
-            { id: 1, classificacao: "TAPA BURACO", descricao: "Buraco em via pública", status: "NOVO", criacao: "06/07/25", inspecao: "", inicio: "", termino: "", conclusao: "", coords: [-37.964693, -4.939801] },
-            { id: 2, classificacao: "MANUTENÇÃO DE HIDRANTES", descricao: "Hidrante quebrado", status: "EM ANDAMENTO", criacao: "06/07/25", inspecao: "07/07/25", inicio: "08/07/25", termino: "", conclusao: "", coords: [-37.963, -4.94] },
-            { id: 3, classificacao: "PODA E REMOÇÃO DE ÁRVORES", descricao: "Poda de Árvore", status: "AGUARDANDO INSPEÇÃO", criacao: "06/07/25", inspecao: "", inicio: "", termino: "", conclusao: "", coords: [-37.962, -4.938] }
-        ];
+        // Variáveis globais
+        let ordens = [];
+        let map;
+        let vectorSource;
+        let overlay;
+
+        // Carrega os dados do JSON
+        function carregarDados() {
+            fetch('os-data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar os dados: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    ordens = data.ordensServico;
+                    renderTabela();
+                    inicializarMapa();
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = error.message;
+                    console.error('Erro ao carregar os dados:', error);
+                });
+        }
 
         // Preenche tabela
         function renderTabela() {
             const tbody = document.querySelector("#osTable tbody");
             tbody.innerHTML = "";
+            
             ordens.forEach(os => {
                 const tr = document.createElement("tr");
+                
+                // Formata o status com badge colorido
+                let statusClass = "status-" + os.status.replace(/\s+/g, '_');
+                let statusHTML = `<span class="status-badge ${statusClass}">${os.status}</span>`;
+                
                 tr.innerHTML = `
-            <td>${os.id}</td>
-            <td>${os.classificacao}</td>
-            <td>${os.descricao}</td>
-            <td>${os.status}</td>
-            <td>${os.criacao}</td>
-            <td>${os.inspecao}</td>
-            <td>${os.inicio}</td>
-            <td>${os.termino}</td>
-            <td>${os.conclusao}</td>
-            <td><button onclick="centralizarMapa(${os.coords[0]}, ${os.coords[1]})">Ver no mapa</button></td>
-        `;
+                    <td>${os.id}</td>
+                    <td>${os.classificacao}</td>
+                    <td>${os.descricao}</td>
+                    <td>${statusHTML}</td>
+                    <td>${formatarData(os.dataCriacao)}</td>
+                    <td>${formatarData(os.dataInspecao)}</td>
+                    <td>${formatarData(os.dataInicio)}</td>
+                    <td>${formatarData(os.dataTermino)}</td>
+                    <td>${formatarData(os.dataConclusao)}</td>
+                    <td><button onclick="centralizarMapa(${os.coordenadas[0]}, ${os.coordenadas[1]})">Ver no mapa</button></td>
+                `;
                 tbody.appendChild(tr);
             });
+            
+            document.getElementById('osTable').style.display = 'table';
+        }
+
+        // Formata data para exibição
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            
+            try {
+                const data = new Date(dataString);
+                return data.toLocaleDateString('pt-BR');
+            } catch (e) {
+                return dataString;
+            }
         }
 
         // Cria camada base
@@ -219,63 +341,97 @@
             }
         }
 
-        let currentLayer = createLayer("osm");
+        // Inicializa o mapa
+        function inicializarMapa() {
+            let currentLayer = createLayer("osm");
 
-        // Cria features
-        const features = ordens.map(os => new ol.Feature({
-            geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
-            osData: os
-        }));
+            // Cria features
+            const features = ordens.map(os => new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coordenadas)),
+                osData: os
+            }));
 
-        // Estilo por status
-        function styleFunction(feature) {
-            const os = feature.get("osData");
-            let color = "yellow";
-            if (os.status === "EM ANDAMENTO") color = "blue";
-            if (os.status === "AGUARDANDO INSPEÇÃO") color = "green";
+            // Estilo por status
+            function styleFunction(feature) {
+                const os = feature.get("osData");
+                let color = "#ff9800"; // Amarelo/laranja para NOVO
+                
+                if (os.status === "EM ANDAMENTO") color = "#2196f3"; // Azul
+                if (os.status === "AGUARDANDO INSPEÇÃO") color = "#f44336"; // Vermelho
+                if (os.status === "CONCLUÍDO") color = "#4caf50"; // Verde
 
-            return new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: 7,
-                    fill: new ol.style.Fill({ color: color }),
-                    stroke: new ol.style.Stroke({ color: "black", width: 1 })
+                return new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 7,
+                        fill: new ol.style.Fill({ color: color }),
+                        stroke: new ol.style.Stroke({ color: "white", width: 2 })
+                    })
+                });
+            }
+
+            vectorSource = new ol.source.Vector({ features });
+            const vectorLayer = new ol.layer.Vector({ 
+                source: vectorSource, 
+                style: styleFunction 
+            });
+
+            // Centro de Russas-CE
+            const centerRussas = [-37.9749, -4.9403];
+            
+            map = new ol.Map({
+                target: 'map',
+                layers: [currentLayer, vectorLayer],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat(centerRussas),
+                    zoom: 14
                 })
             });
-        }
 
-        const vectorSource = new ol.source.Vector({ features });
-        const vectorLayer = new ol.layer.Vector({ source: vectorSource, style: styleFunction });
+            // Configuração do popup
+            const container = document.getElementById('popup');
+            const content = document.getElementById('popup-content');
+            const closer = document.getElementById('popup-closer');
 
-        const map = new ol.Map({
-            target: 'map',
-            layers: [currentLayer, vectorLayer],
-            view: new ol.View({
-                center: ol.proj.fromLonLat(ordens[0].coords),
-                zoom: 15
-            })
-        });
+            // Fechar popup ao clicar no botão de fechar
+            closer.onclick = function () {
+                overlay.setPosition(undefined);
+                closer.blur();
+                return false;
+            };
 
-        // Configuração do popup
-        const container = document.getElementById('popup');
-        const content = document.getElementById('popup-content');
-        const closer = document.getElementById('popup-closer');
-
-        // Fechar popup ao clicar no botão de fechar
-        closer.onclick = function () {
-            overlay.setPosition(undefined);
-            closer.blur();
-            return false;
-        };
-
-        const overlay = new ol.Overlay({
-            element: container,
-            autoPan: {
-                animation: {
-                    duration: 250
+            overlay = new ol.Overlay({
+                element: container,
+                autoPan: {
+                    animation: {
+                        duration: 250
+                    }
                 }
-            }
-        });
-        map.addOverlay(overlay);
+            });
+            map.addOverlay(overlay);
+
+            // Troca de camada
+            document.getElementById("layerSelect").addEventListener("change", function () {
+                map.getLayers().forEach(layer => {
+                    if (layer instanceof ol.layer.Tile) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                const newLayer = createLayer(this.value);
+                map.getLayers().insertAt(0, newLayer);
+            });
+
+            // Clique no ponto para abrir popup
+            map.on('singleclick', function (evt) {
+                const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+                if (feature) {
+                    const coord = evt.coordinate;
+                    showPopup(feature, coord);
+                } else {
+                    overlay.setPosition(undefined);
+                }
+            });
+        }
 
         // Centraliza no ponto
         function centralizarMapa(lon, lat) {
@@ -286,8 +442,8 @@
             // Mostra o popup automaticamente
             const feature = vectorSource.getFeatures().find(f => {
                 const geometry = f.getGeometry();
-                return geometry.getCoordinates()[0] === coord[0] &&
-                    geometry.getCoordinates()[1] === coord[1];
+                const featureCoord = geometry.getCoordinates();
+                return featureCoord[0] === coord[0] && featureCoord[1] === coord[1];
             });
 
             if (feature) {
@@ -298,31 +454,15 @@
         // Mostra popup com informações
         function showPopup(feature, coord) {
             const os = feature.get("osData");
-            document.getElementById('osTipo').textContent = os.classificacao;
-            document.getElementById('osData').textContent = "Data: " + os.criacao;
+            document.getElementById('osTipo').textContent = `OS ${os.id} - ${os.classificacao}`;
+            document.getElementById('osData').textContent = `Criada em: ${formatarData(os.dataCriacao)}`;
             document.getElementById('osDescricao').textContent = os.descricao;
 
             overlay.setPosition(coord);
         }
 
-        // Clique no ponto para abrir popup
-        map.on('singleclick', function (evt) {
-            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
-            if (feature) {
-                const coord = evt.coordinate;
-                showPopup(feature, coord);
-            } else {
-                overlay.setPosition(undefined);
-            }
-        });
-
-        document.getElementById("layerSelect").addEventListener("change", function () {
-            map.removeLayer(currentLayer);
-            currentLayer = createLayer(this.value);
-            map.getLayers().insertAt(0, currentLayer);
-        });
-
-        renderTabela();
+        // Inicia o carregamento dos dados
+        carregarDados();
     </script>
 
 </body>

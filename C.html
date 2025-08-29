@@ -15,6 +15,12 @@
 
         h1 {
             margin-bottom: 10px;
+            color: #1976d2;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
         }
 
         table {
@@ -22,25 +28,52 @@
             border-collapse: collapse;
             margin-bottom: 20px;
             background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         th,
         td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 10px;
             text-align: center;
         }
 
         th {
-            background: #eee;
+            background: #1976d2;
+            color: white;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
         }
 
         button {
             background: #1976d2;
             color: white;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.3s;
+            margin: 2px;
+        }
+
+        button:hover {
+            background: #1565c0;
+        }
+
+        .btn-detalhes {
+            background: #ff9800;
+        }
+
+        .btn-detalhes:hover {
+            background: #f57c00;
         }
 
         #map {
@@ -48,8 +81,10 @@
             height: 400px;
             border: 1px solid #ccc;
             margin-bottom: 20px;
+            border-radius: 4px;
         }
 
+        /* Estilo do popup */
         .ol-popup {
             position: absolute;
             background-color: white;
@@ -59,7 +94,7 @@
             border: 1px solid #cccccc;
             bottom: 12px;
             left: -50px;
-            min-width: 200px;
+            min-width: 250px;
         }
 
         .ol-popup:after,
@@ -102,6 +137,7 @@
         .os-title {
             font-weight: bold;
             margin-bottom: 5px;
+            color: #1976d2;
         }
 
         .os-date {
@@ -110,9 +146,44 @@
             margin-bottom: 5px;
         }
 
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             body {
-                padding: 20px 5%;
+                padding: 15px 5%;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 6px;
+            }
+            
+            button {
+                padding: 6px 10px;
+                font-size: 12px;
             }
         }
     </style>
@@ -125,13 +196,19 @@
     <h1>Russas - Ordens de Serviço</h1>
     <h2>Novas OS Aguardando Aprovação</h2>
 
-    <table id="osTable">
+    <div id="loading" class="loading">Carregando dados...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="no-data" class="no-data" style="display: none;">Não há novas OS aguardando aprovação.</div>
+
+    <table id="osTable" style="display: none;">
         <thead>
             <tr>
                 <th>ID</th>
+                <th>Classificação</th>
                 <th>Descrição</th>
                 <th>Data Criação</th>
-                <th></th>
+                <th>Prioridade</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -144,105 +221,195 @@
             <div class="os-title" id="osTipo"></div>
             <div class="os-date" id="osData"></div>
             <div id="osDescricao"></div>
+            <div id="osLocalizacao"></div>
+            <div id="osPrioridade"></div>
         </div>
     </div>
 
     <script>
-        const novasOS = [
-            { id: 5, descricao: "Lâmpada queimada em poste", criacao: "12/08/25", coords: [-37.965, -4.938] },
-            { id: 6, descricao: "Árvore caída bloqueando rua", criacao: "13/08/25", coords: [-37.966, -4.939] },
-            { id: 7, descricao: "Calçada danificada", criacao: "14/08/25", coords: [-37.967, -4.94] },
-            { id: 8, descricao: "Bueiro entupido", criacao: "15/08/25", coords: [-37.968, -4.941] }
-        ];
+        // Variáveis globais
+        let novasOS = [];
+        let map;
+        let vectorSource;
+        let overlay;
 
+        // Carrega os dados do JSON
+        function carregarDados() {
+            fetch('os-data.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar os dados: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Filtra apenas as OS com status "NOVO" ou "AGUARDANDO INSPEÇÃO"
+                    novasOS = data.ordensServico.filter(os => 
+                        os.status === "NOVO" || os.status === "AGUARDANDO INSPEÇÃO"
+                    );
+                    
+                    if (novasOS.length === 0) {
+                        document.getElementById('no-data').style.display = 'block';
+                    } else {
+                        renderTabela();
+                        inicializarMapa();
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = error.message;
+                    console.error('Erro ao carregar os dados:', error);
+                });
+        }
+
+        // Preenche tabela
         function renderTabela() {
             const tbody = document.querySelector("#osTable tbody");
             tbody.innerHTML = "";
+            
             novasOS.forEach(os => {
                 const tr = document.createElement("tr");
+                
                 tr.innerHTML = `
                     <td>${os.id}</td>
+                    <td>${os.classificacao}</td>
                     <td>${os.descricao}</td>
-                    <td>${os.criacao}</td>
+                    <td>${formatarData(os.dataCriacao)}</td>
+                    <td>${os.prioridade}</td>
                     <td>
-                        <button onclick="centralizarMapa(${os.coords[0]}, ${os.coords[1]})">Ver no mapa</button>
-                        <button onclick="abrirDetalhes(${os.id})">Detalhes</button>
+                        <button onclick="centralizarMapa(${os.coordenadas[0]}, ${os.coordenadas[1]})">Ver no mapa</button>
+                        <button class="btn-detalhes" onclick="abrirDetalhes(${os.id})">Detalhes</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+            
+            document.getElementById('osTable').style.display = 'table';
         }
 
-        // cria camada base
-        let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+        // Formata data para exibição
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            
+            try {
+                const data = new Date(dataString);
+                return data.toLocaleDateString('pt-BR');
+            } catch (e) {
+                return dataString;
+            }
+        }
 
-        const features = novasOS.map(os => new ol.Feature({
-            geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coords)),
-            osData: os
-        }));
+        // Inicializa o mapa
+        function inicializarMapa() {
+            // Camada base
+            let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
 
-        const vectorSource = new ol.source.Vector({ features });
-        const vectorLayer = new ol.layer.Vector({
-            source: vectorSource,
-            style: new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: 7,
-                    fill: new ol.style.Fill({ color: "orange" }),
-                    stroke: new ol.style.Stroke({ color: "black", width: 1 })
+            // Cria features
+            const features = novasOS.map(os => new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coordenadas)),
+                osData: os
+            }));
+
+            vectorSource = new ol.source.Vector({ features });
+            const vectorLayer = new ol.layer.Vector({
+                source: vectorSource,
+                style: new ol.style.Style({
+                    image: new ol.style.Circle({
+                        radius: 7,
+                        fill: new ol.style.Fill({ color: "orange" }),
+                        stroke: new ol.style.Stroke({ color: "white", width: 2 })
+                    })
                 })
-            })
-        });
+            });
 
-        const map = new ol.Map({
-            target: 'map',
-            layers: [currentLayer, vectorLayer],
-            view: new ol.View({
-                center: ol.proj.fromLonLat(novasOS[0].coords),
-                zoom: 15
-            })
-        });
+            // Centro de Russas-CE
+            const centerRussas = [-37.9749, -4.9403];
+            
+            map = new ol.Map({
+                target: 'map',
+                layers: [currentLayer, vectorLayer],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat(centerRussas),
+                    zoom: 14
+                })
+            });
 
-        const container = document.getElementById('popup');
-        const closer = document.getElementById('popup-closer');
-        const overlay = new ol.Overlay({
-            element: container,
-            autoPan: { animation: { duration: 250 } }
-        });
-        map.addOverlay(overlay);
+            // Configuração do popup
+            const container = document.getElementById('popup');
+            const closer = document.getElementById('popup-closer');
 
-        closer.onclick = function () {
-            overlay.setPosition(undefined);
-            closer.blur();
-            return false;
-        };
+            // Fechar popup ao clicar no botão de fechar
+            closer.onclick = function () {
+                overlay.setPosition(undefined);
+                closer.blur();
+                return false;
+            };
 
+            overlay = new ol.Overlay({
+                element: container,
+                autoPan: { animation: { duration: 250 } }
+            });
+            map.addOverlay(overlay);
+
+            // Clique no ponto para abrir popup
+            map.on('singleclick', function (evt) {
+                const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
+                if (feature) {
+                    const os = feature.get("osData");
+                    const coord = evt.coordinate;
+                    
+                    document.getElementById('osTipo').textContent = `OS ${os.id} - ${os.classificacao}`;
+                    document.getElementById('osData').textContent = `Criada em: ${formatarData(os.dataCriacao)}`;
+                    document.getElementById('osDescricao').textContent = os.descricao;
+                    document.getElementById('osLocalizacao').textContent = `Local: ${os.localizacao}`;
+                    document.getElementById('osPrioridade').textContent = `Prioridade: ${os.prioridade}`;
+                    
+                    overlay.setPosition(coord);
+                } else {
+                    overlay.setPosition(undefined);
+                }
+            });
+        }
+
+        // Centraliza no ponto
         function centralizarMapa(lon, lat) {
             const coord = ol.proj.fromLonLat([lon, lat]);
             map.getView().setCenter(coord);
             map.getView().setZoom(17);
-        }
 
-        function abrirDetalhes(id) {
-            alert("Abrindo detalhes da OS " + id + " (Tela D)");
-            // aqui futuramente redireciona para a tela D
-        }
+            // Mostra o popup automaticamente
+            const feature = vectorSource.getFeatures().find(f => {
+                const geometry = f.getGeometry();
+                const featureCoord = geometry.getCoordinates();
+                return featureCoord[0] === coord[0] && featureCoord[1] === coord[1];
+            });
 
-        map.on('singleclick', function (evt) {
-            const feature = map.forEachFeatureAtPixel(evt.pixel, f => f);
             if (feature) {
                 const os = feature.get("osData");
-                const coord = evt.coordinate;
-                document.getElementById('osTipo').textContent = "OS " + os.id;
-                document.getElementById('osData').textContent = "Data: " + os.criacao;
+                const coord = feature.getGeometry().getCoordinates();
+                
+                document.getElementById('osTipo').textContent = `OS ${os.id} - ${os.classificacao}`;
+                document.getElementById('osData').textContent = `Criada em: ${formatarData(os.dataCriacao)}`;
                 document.getElementById('osDescricao').textContent = os.descricao;
+                document.getElementById('osLocalizacao').textContent = `Local: ${os.localizacao}`;
+                document.getElementById('osPrioridade').textContent = `Prioridade: ${os.prioridade}`;
+                
                 overlay.setPosition(coord);
-            } else {
-                overlay.setPosition(undefined);
             }
-        });
+        }
 
-        renderTabela();
+        // Abre detalhes da OS
+        function abrirDetalhes(id) {
+            // Redireciona para a página de detalhes (D.html) passando o ID como parâmetro
+            window.location.href = `D.html?id=${id}`;
+        }
+
+        // Inicia o carregamento dos dados
+        carregarDados();
     </script>
 
 </body>
-</html>
+</html> 

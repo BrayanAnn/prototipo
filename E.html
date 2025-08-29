@@ -2,85 +2,412 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Rotas no Mapa</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+  <title>Rotas de Ordens de Serviço</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f6fa; }
-    h1 { margin-bottom: 20px; }
-    #map { width: 100%; height: 500px; border: 1px solid #ccc; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; }
-    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-    th { background: #007BFF; color: white; }
-    button { padding: 6px 12px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #0056b3; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      margin: 0;
+      padding: 20px 10%;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #1976d2;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #map {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #1976d2;
+      color: white;
+      font-weight: 500;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    button {
+      background: #1976d2;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background 0.3s;
+      margin: 2px;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 15px 5%;
+      }
+      
+      table {
+        font-size: 14px;
+      }
+      
+      th, td {
+        padding: 6px;
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .status-novo {
+      background: #ff9800;
+    }
+
+    .status-em_andamento {
+      background: #2196f3;
+    }
+
+    .status-aguardando_inspecao {
+      background: #f44336;
+    }
+
+    .status-concluido {
+      background: #4caf50;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .controls label {
+      margin-right: 15px;
+    }
+
+    .controls select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
 </head>
+
 <body>
-  <h1>Rotas de Ordens de Serviço</h1>
+
+  <h1>Russas - Ordens de Serviço</h1>
+  <h2>Rotas de Ordens de Serviço</h2>
+
+  <div id="loading" class="loading">Carregando dados...</div>
+  <div id="error" class="error" style="display: none;"></div>
+
+  <div id="controls" class="controls" style="display: none;">
+    <label>
+      Filtrar por status:
+      <select id="statusFilter">
+        <option value="TODAS">Todas as OS</option>
+        <option value="NOVO">Novas</option>
+        <option value="EM ANDAMENTO">Em Andamento</option>
+        <option value="AGUARDANDO INSPEÇÃO">Aguardando Inspeção</option>
+        <option value="CONCLUÍDO">Concluídas</option>
+      </select>
+    </label>
+    <button onclick="calcularRota()">Calcular Rota Otimizada</button>
+    <button onclick="limparRota()">Limpar Rota</button>
+  </div>
 
   <div id="map"></div>
 
-  <h2>Ordens na Rota</h2>
-  <table>
+  <table id="osTable" style="display: none;">
     <thead>
       <tr>
         <th>ID</th>
+        <th>Classificação</th>
         <th>Descrição</th>
-        <th>Localização</th>
         <th>Status</th>
+        <th>Prioridade</th>
+        <th>Localização</th>
       </tr>
     </thead>
-    <tbody>
-      <tr><td>101</td><td>Troca de lâmpada</td><td>Rua A, nº 123</td><td>Aprovada</td></tr>
-      <tr><td>102</td><td>Buraco na via</td><td>Av. Central, nº 456</td><td>Aprovada</td></tr>
-      <tr><td>103</td><td>Vazamento de água</td><td>Rua das Flores, nº 789</td><td>Aprovada</td></tr>
-    </tbody>
+    <tbody></tbody>
   </table>
 
-  <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
   <script>
-    // Mapa base
-    const map = new ol.Map({
-      target: 'map',
-      layers: [
-        new ol.layer.Tile({
-          source: new ol.source.OSM()
+    // Variáveis globais
+    let todasOrdens = [];
+    let ordensFiltradas = [];
+    let map;
+    let markerSource;
+    let routeSource;
+    let routeLayer;
+
+    // Carrega os dados do JSON
+    function carregarDados() {
+      fetch('os-data.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao carregar os dados: ' + response.status);
+          }
+          return response.json();
         })
-      ],
-      view: new ol.View({
-        center: ol.proj.fromLonLat([-51.229, -30.034]), // Exemplo: Porto Alegre
-        zoom: 13
-      })
-    });
+        .then(data => {
+          document.getElementById('loading').style.display = 'none';
+          todasOrdens = data.ordensServico;
+          ordensFiltradas = [...todasOrdens];
+          
+          document.getElementById('controls').style.display = 'block';
+          renderTabela();
+          inicializarMapa();
+          
+          // Adiciona evento de filtro
+          document.getElementById('statusFilter').addEventListener('change', filtrarOS);
+        })
+        .catch(error => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'block';
+          document.getElementById('error').textContent = error.message;
+          console.error('Erro ao carregar os dados:', error);
+        });
+    }
 
-    // Coordenadas de exemplo (lon, lat)
-    const coords = [
-      [-51.229, -30.034], // OS 101
-      [-51.235, -30.030], // OS 102
-      [-51.240, -30.036]  // OS 103
-    ];
+    // Filtra as OS por status
+    function filtrarOS() {
+      const status = document.getElementById('statusFilter').value;
+      
+      if (status === 'TODAS') {
+        ordensFiltradas = [...todasOrdens];
+      } else {
+        ordensFiltradas = todasOrdens.filter(os => os.status === status);
+      }
+      
+      renderTabela();
+      atualizarMapa();
+    }
 
-    // Criar pontos no mapa
-    coords.forEach(c => {
-      const feature = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat(c))
+    // Preenche tabela
+    function renderTabela() {
+      const tbody = document.querySelector("#osTable tbody");
+      tbody.innerHTML = "";
+      
+      if (ordensFiltradas.length === 0) {
+        document.getElementById('osTable').style.display = 'none';
+        return;
+      }
+      
+      ordensFiltradas.forEach(os => {
+        const tr = document.createElement("tr");
+        
+        // Formata o status com badge colorido
+       let statusClass = "status-" + os.status
+          .normalize("NFD") // separa letra + acento
+          .replace(/[\u0300-\u036f]/g, "") // remove os acentos
+          .replace(/ç/g, "c") // trata o cedilha
+          .replace(/\s+/g, "_") // troca espaços por "_"
+          .toLowerCase(); // opcional, para ficar padronizado
+        let statusHTML = `<span class="status-badge ${statusClass == 'AGUARDANDO_INSPEÇÃO' ? 'AGUARDANDO_INSPECAO' : statusClass}">${os.status}</span>`;
+        
+        tr.innerHTML = `
+          <td>${os.id}</td>
+          <td>${os.classificacao}</td>
+          <td>${os.descricao}</td>
+          <td>${statusHTML}</td>
+          <td>${os.prioridade}</td>
+          <td>${os.localizacao}</td>
+        `;
+        tbody.appendChild(tr);
       });
-      const layer = new ol.layer.Vector({
-        source: new ol.source.Vector({ features: [feature] })
-      });
-      map.addLayer(layer);
-    });
+      
+      document.getElementById('osTable').style.display = 'table';
+    }
 
-    // Criar linha (rota) ligando os pontos
-    const line = new ol.geom.LineString(coords.map(c => ol.proj.fromLonLat(c)));
-    const routeFeature = new ol.Feature({ geometry: line });
-    const routeLayer = new ol.layer.Vector({
-      source: new ol.source.Vector({ features: [routeFeature] }),
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({ color: 'blue', width: 3 })
-      })
-    });
-    map.addLayer(routeLayer);
+    // Inicializa o mapa
+    function inicializarMapa() {
+      // Camada base
+      let currentLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+
+      // Fonte para marcadores
+      markerSource = new ol.source.Vector();
+      
+      // Fonte para rotas
+      routeSource = new ol.source.Vector();
+      routeLayer = new ol.layer.Vector({
+        source: routeSource,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#ff0000',
+            width: 4
+          })
+        })
+      });
+
+      // Camada de marcadores
+      const markerLayer = new ol.layer.Vector({
+        source: markerSource,
+        style: function(feature) {
+          const os = feature.get('osData');
+          let color = '#ff9800'; // Amarelo/laranja para NOVO
+          
+          if (os.status === "EM ANDAMENTO") color = '#2196f3'; // Azul
+          if (os.status === "AGUARDANDO INSPEÇÃO") color = '#f44336'; // Vermelho
+          if (os.status === "CONCLUÍDO") color = '#4caf50'; // Verde
+
+          return new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 7,
+              fill: new ol.style.Fill({ color: color }),
+              stroke: new ol.style.Stroke({ color: 'white', width: 2 })
+            }),
+            text: new ol.style.Text({
+              text: os.id.toString(),
+              fill: new ol.style.Fill({ color: 'white' }),
+              stroke: new ol.style.Stroke({ color: 'black', width: 2 }),
+              offsetY: -15,
+              font: 'bold 12px Arial'
+            })
+          });
+        }
+      });
+
+      // Centro de Russas-CE (usando a primeira OS como referência)
+      const centerRussas = ordensFiltradas.length > 0 ? 
+        ordensFiltradas[0].coordenadas : [-37.9749, -4.9403];
+      
+      map = new ol.Map({
+        target: 'map',
+        layers: [currentLayer, markerLayer, routeLayer],
+        view: new ol.View({
+          center: ol.proj.fromLonLat(centerRussas),
+          zoom: 13
+        })
+      });
+
+      // Atualiza os marcadores no mapa
+      atualizarMapa();
+    }
+
+    // Atualiza os marcadores no mapa
+    function atualizarMapa() {
+      // Limpa marcadores existentes
+      markerSource.clear();
+      
+      // Adiciona novos marcadores
+      ordensFiltradas.forEach(os => {
+        const marker = new ol.Feature({
+          geometry: new ol.geom.Point(ol.proj.fromLonLat(os.coordenadas)),
+          osData: os
+        });
+        markerSource.addFeature(marker);
+      });
+      
+      // Ajusta a visualização para mostrar todos os marcadores
+      if (ordensFiltradas.length > 0) {
+        const extent = markerSource.getExtent();
+        map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 1000 });
+      }
+    }
+
+    // Calcula rota entre as OS (simulação)
+    function calcularRota() {
+      if (ordensFiltradas.length < 2) {
+        alert('É necessário ter pelo menos 2 ordens de serviço para calcular uma rota.');
+        return;
+      }
+      
+      // Limpa rota anterior
+      routeSource.clear();
+      
+      // Ordena as OS por prioridade (ALTA primeiro) e depois por data de criação
+      const osOrdenadas = [...ordensFiltradas].sort((a, b) => {
+        const prioridadeOrder = { 'ALTA': 0, 'MÉDIA': 1, 'BAIXA': 2 };
+        if (prioridadeOrder[a.prioridade] !== prioridadeOrder[b.prioridade]) {
+          return prioridadeOrder[a.prioridade] - prioridadeOrder[b.prioridade];
+        }
+        return new Date(a.dataCriacao) - new Date(b.dataCriacao);
+      });
+      
+      // Cria coordenadas para a rota
+      const coordinates = osOrdenadas.map(os => ol.proj.fromLonLat(os.coordenadas));
+      
+      // Cria a linha da rota
+      const routeLine = new ol.geom.LineString(coordinates);
+      const routeFeature = new ol.Feature({
+        geometry: routeLine,
+        name: 'RotaOS'
+      });
+      
+      routeSource.addFeature(routeFeature);
+      
+      // Ajusta a visualização para mostrar a rota completa
+      const extent = routeLine.getExtent();
+      map.getView().fit(extent, { padding: [50, 50, 50, 50], duration: 1000 });
+      
+      alert(`Rota calculada com ${osOrdenadas.length} ordens de serviço, ordenadas por prioridade e data.`);
+    }
+
+    // Limpa a rota do mapa
+    function limparRota() {
+      routeSource.clear();
+    }
+
+    // Inicia o carregamento dos dados
+    carregarDados();
   </script>
 </body>
 </html>
