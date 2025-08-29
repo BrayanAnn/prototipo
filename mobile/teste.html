@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prefeitura - Registro de Ocorrências</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f4f6f9;
+    color: #333;
+  }
+
+  /* Header fixo com blur */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 119, 204, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  main {
+    padding: 80px 15px 80px; /* espaço para header + navbar */
+  }
+
+  section {
+    display: none;
+  }
+
+  section.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cards */
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  .card h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #0077cc;
+  }
+
+  .card p {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  .city-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.city-images img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.city-images img:hover {
+  transform: scale(1.05);
+}
+
+  /* Formulário */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 4px;
+  }
+
+  input, textarea, select {
+    padding: 14px 12px 14px 12px; /* padding-top, padding-right, padding-bottom, padding-left */
+    padding-right: 20px; /* 👈 adiciona espaçamento extra à direita */
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 15px;
+    width: 100%;
+    background: #fff;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-sizing: border-box; /* garante que padding não aumente largura */
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border: 1px solid #0077cc;
+    box-shadow: 0 0 4px rgba(0, 119, 204, 0.3);
+  }
+
+  textarea {
+    resize: none;
+    min-height: 100px;
+  }
+
+  input[type="file"] {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  button.submit {
+    background: linear-gradient(135deg, #0077cc, #005fa3);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+  }
+
+  button.submit:hover {
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    transform: translateY(-2px);
+  }
+
+  /* Navbar inferior fixa e translúcida */
+  nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid rgba(200,200,200,0.5);
+    padding: 8px 0;
+    z-index: 1000;
+  }
+
+  nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 6px;
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+  }
+
+  nav button i {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  nav button.active {
+    color: #0077cc;
+    font-weight: bold;
+  }
+
+  /* Responsividade para telas menores */
+  @media (max-width: 480px) {
+    input, textarea, select, button.submit {
+      font-size: 14px;
+      padding: 12px;
+      padding-right: 18px; /* mantém espaçamento proporcional em mobile */
+    }
+
+    label {
+      font-size: 13px;
+    }
+  }
+
+</style>
+
+</head>
+<body>
+  <header>App Cidadão</header>
+
+  <main>
+    <!-- Home -->
+    <section id="home" class="active">
+      <div class="card">
+        <h3><i class="fa-solid fa-circle-info"></i> Sobre o serviço</h3>
+        <p>Este sistema permite que você registre ocorrências urbanas como buracos no asfalto, lixo em locais indevidos e árvores caídas. Sua participação ajuda a prefeitura a agir mais rápido.</p>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-city"></i> Nossa Cidade</h3>
+        <p>Conheça nossa cidade, seus pontos turísticos e principais bairros. Incentivamos o cuidado com o ambiente urbano e a preservação dos espaços públicos.</p>
+        
+        <div class="city-images">
+        <img src="cidade1.jpg" alt="Cidade - Centro" />
+        <img src="cidade2.jpg" alt="Cidade - Parque" />
+        <img src="cidade3.jpg" alt="Cidade - Praça" />
+        </div>
+    </div>
+    </section>
+
+
+    <!-- Registro -->
+    <section id="registrar">
+      <form>
+        <label><i class="fa-solid fa-user"></i> Nome</label>
+        <input type="text" placeholder="Seu nome">
+
+        <label><i class="fa-solid fa-envelope"></i> Email</label>
+        <input type="email" placeholder="Seu email">
+
+        <label><i class="fa-solid fa-map-marker-alt"></i> Local da ocorrência</label>
+        <input type="text" placeholder="Endereço ou ponto de referência">
+
+        <label><i class="fa-solid fa-list-check"></i> Tipo de ocorrência</label>
+        <select>
+          <option>Buraco no asfalto</option>
+          <option>Lixo em local indevido</option>
+          <option>Árvore caída</option>
+          <option>Outros</option>
+        </select>
+
+        <label><i class="fa-solid fa-align-left"></i> Descrição</label>
+        <textarea rows="3" placeholder="Descreva a ocorrência"></textarea>
+
+        <label><i class="fa-solid fa-camera"></i> Foto</label>
+        <input type="file" accept="image/*">
+
+        <button type="submit" class="submit"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
+      </form>
+    </section>
+
+    <!-- Ocorrências -->
+    <section id="ocorrencias">
+      <div class="card">
+        <h3><i class="fa-solid fa-road"></i> Buraco no asfalto</h3>
+        <p><i class="fa-solid fa-location-dot"></i> Rua das Flores, nº 123</p>
+        <p><i class="fa-solid fa-clock"></i> Registrado em: 28/08/2025</p>
+        <p><i class="fa-solid fa-hourglass-half"></i> Status: Em análise</p>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-dumpster"></i> Lixo em local indevido</h3>
+        <p><i class="fa-solid fa-location-dot"></i> Av. Brasil, próximo ao nº 500</p>
+        <p><i class="fa-solid fa-clock"></i> Registrado em: 27/08/2025</p>
+        <p><i class="fa-solid fa-check-circle"></i> Status: Resolvido</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Navegação -->
+  <nav>
+    <button onclick="mostrarPagina('home')" class="active">
+      <i class="fa-solid fa-house"></i>
+      Home
+    </button>
+    <button onclick="mostrarPagina('registrar')">
+      <i class="fa-solid fa-pen-to-square"></i>
+      Registrar
+    </button>
+    <button onclick="mostrarPagina('ocorrencias')">
+      <i class="fa-solid fa-list"></i>
+      Ocorrências
+    </button>
+  </nav>
+
+  <script>
+    function mostrarPagina(pagina) {
+      document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
+      document.getElementById(pagina).classList.add("active");
+
+      document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
+      event.target.closest("button").classList.add("active");
+    }
+  </script>
+</body>
+</html>

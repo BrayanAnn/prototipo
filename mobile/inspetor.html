@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>App Inspetor - OS</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f4f6f9;
+        color: #333;
+      }
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 119, 204, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        z-index: 1000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      main {
+        padding: 80px 15px 80px;
+      }
+      section {
+        display: none;
+      }
+      section.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #0077cc;
+      }
+      .card p {
+        margin: 4px 0;
+        font-size: 14px;
+      }
+      .city-images,
+      .os-images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .city-images img,
+      .os-images img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+      }
+      .city-images img:hover,
+      .os-images img:hover {
+        transform: scale(1.05);
+      }
+      .map {
+        margin: 10px 0 0 0;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  width: 100%;
+        background: #e0e0e0;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .actions button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+      }
+      .actions .approve {
+        background: #4caf50;
+        color: #fff;
+      }
+      .actions .approve:hover {
+        background: #43a047;
+      }
+      .actions .deny {
+        background: #f44336;
+        color: #fff;
+      }
+      .actions .deny:hover {
+        background: #c62828;
+      }
+      nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid rgba(200, 200, 200, 0.5);
+        padding: 8px 0;
+        z-index: 1000;
+      }
+      nav button {
+        flex: 1;
+        background: none;
+        border: none;
+        padding: 6px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        cursor: pointer;
+      }
+      nav button i {
+        font-size: 18px;
+        display: block;
+        margin-bottom: 4px;
+      }
+      nav button.active {
+        color: #0077cc;
+        font-weight: bold;
+      }
+      @media (max-width: 480px) {
+        .card h3 {
+          font-size: 15px;
+        }
+        .actions button {
+          font-size: 14px;
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>App Inspetor</header>
+    <main>
+      <!-- Rotas -->
+      <section id="rotas" class="active">
+        <div class="card">
+          <h3><i class="fa-solid fa-route"></i> Rotas de OS</h3>
+          <p>
+            Selecione uma ordem de serviço para visualizar detalhes e
+            aprovar ou negar.
+          </p>
+          <div id="os-list"></div>
+        </div>
+      </section>
+      <!-- Detalhes -->
+      <section id="detalhes">
+        <div class="card" id="os-detalhes"></div>
+      </section>
+      <!-- Aprovadas -->
+      <section id="aprovadas">
+        <div class="card">
+          <h3><i class="fa-solid fa-check"></i> OS Aprovadas</h3>
+          <div id="os-aprovadas-list"></div>
+        </div>
+      </section>
+    </main>
+    <nav>
+      <button onclick="mostrarPagina('rotas')" class="active">
+        <i class="fa-solid fa-map"></i>
+        Rotas
+      </button>
+      <button onclick="mostrarPagina('aprovadas')">
+        <i class="fa-solid fa-list-check"></i>
+        Aprovadas
+      </button>
+    </nav>
+    <script>
+      // Dados simulados de OS
+      const ordens = [
+        {
+          id: 5,
+          status: 'pendente',
+          descricao: 'Buraco na rua',
+          fotos: ['cidade1.jpg'],
+          coordenadas: '-23.55, -46.63',
+          mapa: 'cidade1.jpg',
+        },
+        {
+          id: 6,
+          status: 'pendente',
+          descricao: 'Vazamento de água',
+          fotos: ['cidade2.jpg'],
+          coordenadas: '-23.56, -46.64',
+          mapa: 'cidade2.jpg',
+        },
+        {
+          id: 7,
+          status: 'aprovada',
+          descricao: 'Árvore caída',
+          fotos: ['cidade3.jpg'],
+          coordenadas: '-23.57, -46.65',
+          mapa: 'cidade3.jpg',
+        },
+      ];
+      let selected = null;
+
+      function renderOSList() {
+        const osList = document.getElementById('os-list');
+        osList.innerHTML = '';
+        ordens
+          .filter((os) => os.status === 'pendente')
+          .forEach((os) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.style.cursor = 'pointer';
+            div.innerHTML = `<b>OS ${os.id}</b> - ${os.descricao}<br><span style='font-size:13px;color:#888;'>${os.coordenadas}</span>`;
+            div.onclick = () => {
+              selected = os;
+              mostrarPagina('detalhes');
+              renderOSDetalhes();
+            };
+            osList.appendChild(div);
+          });
+        if (osList.innerHTML === '')
+          osList.innerHTML =
+            '<p style="color:#888;">Nenhuma OS pendente.</p>';
+      }
+
+      function renderOSDetalhes() {
+        const detalhes = document.getElementById('os-detalhes');
+        if (!selected) {
+          detalhes.innerHTML = '<p>Selecione uma OS.</p>';
+          return;
+        }
+        detalhes.innerHTML = `
+                <h3><i class="fa-solid fa-file-alt"></i> OS ${
+                  selected.id
+                }</h3>
+                <p><b>Descrição:</b> ${selected.descricao}</p>
+                <div class="os-images">
+                    ${selected.fotos
+                      .map((f) => `<img src="${f}" alt="foto">`)
+                      .join('')}
+                </div>
+                <p><b>Coordenadas:</b> ${selected.coordenadas}</p>
+            <div class="map"><iframe id="gmap" width="100%" height="220" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+      .map iframe {
+        display: block;
+        width: 100%;
+        height: 220px;
+        border: 0;
+      }
+                ${
+                  selected.status === 'pendente'
+                    ? `
+                <div class="actions">
+                    <button class="approve" onclick="aprovarOS(${selected.id})"><i class='fa-solid fa-check'></i> Aprovar</button>
+                    <button class="deny" onclick="negarOS(${selected.id})"><i class='fa-solid fa-xmark'></i> Negar</button>
+                </div>`
+                    : ''
+                }
+                <div style="margin-top:10px;"><button onclick="mostrarPagina('rotas')" style="background:#eee;color:#0077cc;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;"><i class='fa-solid fa-arrow-left'></i> Voltar</button></div>
+            `;
+        setTimeout(() => renderGoogleMap(), 100);
+      }
+      function renderGoogleMap() {
+        if (!selected) return;
+        const coords = selected.coordenadas
+          .split(',')
+          .map((s) => parseFloat(s.trim()));
+        if (
+          !coords ||
+          coords.length !== 2 ||
+          isNaN(coords[0]) ||
+          isNaN(coords[1])
+        )
+          return;
+        const lat = coords[0];
+        const lng = coords[1];
+        const url = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+        const iframe = document.getElementById('gmap');
+        if (iframe) iframe.src = url;
+      }
+
+      function renderOSAprovadas() {
+        const aprovadas = document.getElementById(
+          'os-aprovadas-list'
+        );
+        aprovadas.innerHTML = '';
+        ordens
+          .filter((os) => os.status === 'aprovada')
+          .forEach((os) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<b>OS ${os.id}</b> - ${os.descricao}<br><span style='font-size:13px;color:#888;'>${os.coordenadas}</span>`;
+            aprovadas.appendChild(div);
+          });
+        if (aprovadas.innerHTML === '')
+          aprovadas.innerHTML =
+            '<p style="color:#888;">Nenhuma OS aprovada.</p>';
+      }
+
+      window.aprovarOS = function (id) {
+        const os = ordens.find((o) => o.id === id);
+        ordens
+          .filter((os) => os.status === 'aprovada')
+          .forEach((os) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<b>OS ${os.id}</b> - ${os.descricao}<br><span style='font-size:13px;color:#888;'>${os.coordenadas}</span>`;
+            aprovadas.appendChild(div);
+          });
+        if (aprovadas.innerHTML === '')
+          aprovadas.innerHTML =
+            '<p style="color:#888;">Nenhuma OS aprovada.</p>';
+      };
+
+      window.aprovarOS = function (id) {
+        const os = ordens.find((o) => o.id === id);
+        if (os) os.status = 'aprovada';
+        selected = null;
+        mostrarPagina('rotas');
+        renderOSList();
+        renderOSAprovadas();
+      };
+      window.negarOS = function (id) {
+        const idx = ordens.findIndex((o) => o.id === id);
+        if (idx !== -1) ordens.splice(idx, 1);
+        selected = null;
+        mostrarPagina('rotas');
+        renderOSList();
+        renderOSAprovadas();
+      };
+
+      function mostrarPagina(pagina) {
+        document
+          .querySelectorAll('section')
+          .forEach((sec) => sec.classList.remove('active'));
+        document.getElementById(pagina).classList.add('active');
+        document
+          .querySelectorAll('nav button')
+          .forEach((btn) => btn.classList.remove('active'));
+        if (pagina === 'rotas')
+          document
+            .querySelectorAll('nav button')[0]
+            .classList.add('active');
+        if (pagina === 'aprovadas')
+          document
+            .querySelectorAll('nav button')[1]
+            .classList.add('active');
+        if (pagina === 'rotas') renderOSList();
+        if (pagina === 'aprovadas') renderOSAprovadas();
+        if (pagina === 'detalhes') renderOSDetalhes();
+      }
+
+      // Inicialização
+      renderOSList();
+      renderOSAprovadas();
+    </script>
+  </body>
+</html>
