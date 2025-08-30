@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>APP Equipe - OS</title>
+
+<!-- Paleta + estilo base (mesma do seu app) -->
+<style>
+:root{
+  --color1:#1ca2ea; /* primária */
+  --color2:#87b0ee; /* secundária */
+  --color3:#043193; /* títulos */
+  --color4:#636d8d; /* texto */
+  --color5:#aec2d1; /* cards/fundos suaves */
+}
+
+/* Reset básico */
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Arial,Helvetica,sans-serif; background:#f4f6f9; color:var(--color4);
+}
+
+/* Header fixo com blur + botão Pesquisar sutil à direita */
+header{
+  position:fixed; top:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:center;
+  padding:12px 15px;
+  background:rgba(28,162,234,0.85);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,0.2); z-index:1000;
+}
+.header-title{ font-size:20px; font-weight:bold; color:#fff; }
+#searchBtn{
+  display:flex; align-items:center; gap:6px; padding:6px 10px;
+  border-radius:10px; border:none; background:rgba(255,255,255,0.2);
+  color:#fff; font-size:14px; cursor:pointer; transition:background .2s;
+}
+#searchBtn:hover{ background:rgba(255,255,255,0.35); }
+#searchBtn i{ font-size:16px; }
+
+/* Conteúdo com espaço para header e navbar fixa */
+main{ padding:80px 14px 84px; max-width:720px; margin:0 auto; }
+
+/* Cards e blocos */
+.card{
+  background:#fff; border-radius:14px; padding:14px; margin-bottom:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.card h3{
+  margin:0 0 8px; font-size:16px; color:var(--color3); display:flex; align-items:center; gap:6px;
+}
+.card p{ margin:4px 0; font-size:14px; }
+
+/* Abas (páginas) */
+.page{ display:none; }
+.page.active{ display:block; animation:fadeIn .25s ease-in; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+
+/* Navbar fixa inferior translúcida */
+nav{
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  display:flex; justify-content:space-around; border-top:1px solid rgba(200,200,200,.5);
+  padding:8px 0; z-index:1000;
+}
+nav button{
+  flex:1; background:none; border:none; padding:6px; text-align:center; font-size:12px;
+  color:var(--color4); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px;
+}
+nav button i{ font-size:18px; }
+nav button.active{ color:var(--color1); font-weight:bold; }
+
+/* Tabelas responsivas */
+.table-responsive{ overflow-x:auto; background:#fff; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+table{ width:100%; border-collapse:collapse; min-width:560px; }
+thead th{
+  text-align:left; font-size:13px; color:#3b4b6b; background:var(--color5); padding:10px;
+}
+tbody td{ padding:10px; border-top:1px solid #eaeff5; font-size:14px; }
+.badge{
+  display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600;
+}
+.badge-pendente{ background:#fff3cd; color:#946200; }
+.badge-confirmada{ background:#d1f7d6; color:#1d7a2a; }
+.badge-problema{ background:#ffe0e0; color:#a32020; }
+
+/* Form Execução */
+form.exec{ display:flex; flex-direction:column; gap:12px; }
+label{ font-size:13px; font-weight:600; color:#4a5568; }
+select, input[type="text"], textarea, input[type="file"]{
+  width:100%; padding:12px; border:1px solid #d7dce5; border-radius:10px; background:#fff; font-size:14px;
+}
+textarea{ resize:none; min-height:90px; }
+button.primary{
+  background:linear-gradient(135deg, var(--color1), var(--color2)); color:#fff; border:none;
+  padding:12px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; transition:transform .15s;
+}
+button.primary:hover{ transform:translateY(-1px); }
+.actions{ display:flex; gap:10px; flex-wrap:wrap; }
+button.secondary{
+  background:#fff; color:var(--color3); border:1px solid var(--color2);
+  padding:10px 12px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+
+/* Mapa */
+#map{ width:100%; height:300px; border-radius:12px; overflow:hidden; }
+
+/* Lista da rota */
+.os-item{
+  background:#fff; border:1px solid #eaeff5; border-radius:12px; padding:12px; margin-bottom:10px;
+  display:flex; gap:10px; align-items:flex-start;
+}
+.os-left{
+  width:34px; height:34px; border-radius:10px; background:var(--color5); display:flex; align-items:center; justify-content:center; color:var(--color3);
+}
+.os-body{ flex:1; }
+.os-title{ margin:0; font-weight:700; color:#1f2a44; font-size:14px; }
+.os-meta{ font-size:12px; color:#6b7280; }
+.os-actions{ margin-top:8px; display:flex; gap:8px; }
+
+/* Modal de detalhes */
+.modal{
+  position:fixed; inset:0; display:none; align-items:flex-end; justify-content:center; z-index:1100;
+  background:rgba(0,0,0,0.35);
+}
+.modal.active{ display:flex; }
+.modal-card{
+  background:#fff; width:100%; max-width:720px; border-top-left-radius:16px; border-top-right-radius:16px;
+  padding:14px; max-height:80vh; overflow:auto;
+}
+.modal-header{ display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3{ margin:0; font-size:16px; color:var(--color3); }
+.modal-close{ background:none; border:none; font-size:20px; cursor:pointer; color:#444; }
+.detail-photo{ width:100%; max-height:220px; object-fit:cover; border-radius:10px; background:#f0f3f7; }
+
+/* Responsividade header */
+@media (max-width:480px){
+  header{ flex-direction:column; align-items:flex-start; gap:8px; }
+  #searchBtn{ width:100%; justify-content:center; }
+}
+</style>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- Leaflet (Mapa) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- Header com título à esquerda e botão "Pesquisar" sutil à direita -->
+<header>
+  <div class="header-title">APP Equipe</div>
+  <button id="searchBtn" style="display:none;"><i class="fa-solid fa-magnifying-glass"></i> Pesquisar</button>
+</header>
+
+<main>
+  <!-- Página: Rota (mapa) -->
+  <section id="page-mapa" class="page active">
+    <div class="card">
+      <h3><i class="fa-solid fa-route"></i> Rota de Hoje</h3>
+      <div id="map"></div>
+      <p class="os-meta" style="margin-top:8px">
+        Toque nos marcadores para ver o título da OS. A rota liga os pontos na ordem de execução.
+      </p>
+    </div>
+  </section>
+
+  <!-- Página: Lista da Rota -->
+  <section id="page-lista" class="page">
+    <div class="card">
+      <h3><i class="fa-solid fa-list-check"></i> OS na Rota</h3>
+      <div id="rota-list"></div>
+    </div>
+  </section>
+
+  <!-- Página: Execução/Confirmação -->
+  <section id="page-exec" class="page">
+    <div class="card">
+      <h3><i class="fa-solid fa-wrench"></i> Executar / Confirmar OS</h3>
+      <form id="execForm" class="exec">
+        <div>
+          <label for="osSelect">Selecionar OS</label>
+          <select id="osSelect" required></select>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="secondary" id="btnDetalhes"><i class="fa-regular fa-eye"></i> Ver detalhes</button>
+          <button type="button" class="secondary" id="btnLocalizar"><i class="fa-solid fa-location-crosshairs"></i> Mostrar no mapa</button>
+        </div>
+
+        <div>
+          <label>Foto “Antes”</label>
+          <div id="upload-container-antes" style="margin-bottom:10px;">
+            <button type="button" id="btn-add-foto-antes" class="upload-btn-modern" aria-haspopup="dialog">
+              <i class="fa-solid fa-camera"></i> Adicionar foto "Antes"
+            </button>
+            <div id="upload-preview-antes" style="display:none;flex-direction:column;align-items:center;margin-top:10px;">
+              <img id="upload-img-antes" src="" alt="Prévia da foto antes" style="max-width:100%;max-height:180px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);margin-bottom:8px;" />
+              <div id="upload-info-antes" style="font-size:14px;color:#444;margin-bottom:8px;"></div>
+              <div style="display:flex;gap:10px;width:100%;justify-content:center;">
+                <button type="button" id="btn-trocar-foto-antes" class="upload-action">Trocar</button>
+                <button type="button" id="btn-remover-foto-antes" class="upload-action">Remover</button>
+              </div>
+            </div>
+            <div id="upload-erro-antes" aria-live="polite" style="color:#c62828;font-size:14px;margin-top:8px;display:none;"></div>
+            <!-- Modal -->
+            <div id="upload-modal-antes" class="upload-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-antes" tabindex="-1" style="display:none;">
+              <div class="upload-modal-bg"></div>
+              <div class="upload-modal-content" role="document">
+                <h4 id="modal-title-antes" style="margin:0 0 18px 0;font-size:18px;color:#1976d2;">Adicionar foto "Antes"</h4>
+                <button type="button" class="upload-modal-option" id="modal-tirar-foto-antes"><i class="fa-solid fa-camera"></i> Tirar foto</button>
+                <button type="button" class="upload-modal-option" id="modal-galeria-antes"><i class="fa-solid fa-image"></i> Selecionar da galeria</button>
+                <button type="button" class="upload-modal-close" id="modal-close-antes" aria-label="Fechar">&times;</button>
+              </div>
+              <input id="input-tirar-foto-antes" type="file" accept="image/*" capture="environment" style="display:none;">
+              <input id="input-galeria-antes" type="file" accept="image/*" style="display:none;">
+            </div>
+          </div>
+        </div>
+        <div>
+          <label>Foto “Depois”</label>
+          <div id="upload-container-depois" style="margin-bottom:10px;">
+            <button type="button" id="btn-add-foto-depois" class="upload-btn-modern" aria-haspopup="dialog">
+              <i class="fa-solid fa-camera"></i> Adicionar foto "Depois"
+            </button>
+            <div id="upload-preview-depois" style="display:none;flex-direction:column;align-items:center;margin-top:10px;">
+              <img id="upload-img-depois" src="" alt="Prévia da foto depois" style="max-width:100%;max-height:180px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);margin-bottom:8px;" />
+              <div id="upload-info-depois" style="font-size:14px;color:#444;margin-bottom:8px;"></div>
+              <div style="display:flex;gap:10px;width:100%;justify-content:center;">
+                <button type="button" id="btn-trocar-foto-depois" class="upload-action">Trocar</button>
+                <button type="button" id="btn-remover-foto-depois" class="upload-action">Remover</button>
+              </div>
+            </div>
+            <div id="upload-erro-depois" aria-live="polite" style="color:#c62828;font-size:14px;margin-top:8px;display:none;"></div>
+            <!-- Modal -->
+            <div id="upload-modal-depois" class="upload-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-depois" tabindex="-1" style="display:none;">
+              <div class="upload-modal-bg"></div>
+              <div class="upload-modal-content" role="document">
+                <h4 id="modal-title-depois" style="margin:0 0 18px 0;font-size:18px;color:#1976d2;">Adicionar foto "Depois"</h4>
+                <button type="button" class="upload-modal-option" id="modal-tirar-foto-depois"><i class="fa-solid fa-camera"></i> Tirar foto</button>
+                <button type="button" class="upload-modal-option" id="modal-galeria-depois"><i class="fa-solid fa-image"></i> Selecionar da galeria</button>
+                <button type="button" class="upload-modal-close" id="modal-close-depois" aria-label="Fechar">&times;</button>
+              </div>
+              <input id="input-tirar-foto-depois" type="file" accept="image/*" capture="environment" style="display:none;">
+              <input id="input-galeria-depois" type="file" accept="image/*" style="display:none;">
+            </div>
+          </div>
+<style>
+  #upload-container-antes > .upload-btn-modern,
+  #upload-container-depois > .upload-btn-modern {
+    margin-top: 12px;
+  }
+  .upload-btn-modern {
+    background: linear-gradient(135deg, #1976d2, #2196f3);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 0;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    margin-bottom: 0;
+    outline: none;
+    min-height: 38px;
+  }
+  .upload-btn-modern:active { background: #1565c0; }
+  .upload-action {
+    background: #f5f6fa;
+    color: #1976d2;
+    border: 1px solid #1976d2;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    min-height: 32px;
+  }
+  .upload-action:hover { background: #e3eafc; }
+  .upload-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInModal 0.2s;
+  }
+  .upload-modal-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.18);
+    border-radius: 0;
+    z-index: 1;
+    animation: fadeInModalBg 0.2s;
+  }
+  .upload-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    padding: 28px 18px 18px 18px;
+    min-width: 240px;
+    max-width: 90vw;
+    width: 320px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    animation: slideUpModal 0.22s;
+  }
+  .upload-modal-option {
+    background: #f5f6fa;
+    color: #1976d2;
+    border: 1px solid #1976d2;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 0;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    outline: none;
+  }
+  .upload-modal-option:hover { background: #e3eafc; }
+  .upload-modal-close {
+    position: absolute;
+    top: 10px; right: 14px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 26px;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    transition: background 0.2s;
+    z-index: 3;
+  }
+  .upload-modal-close:hover { background: #f5f6fa; }
+  @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeInModalBg { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUpModal { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @media (max-width: 480px) {
+    .upload-modal-content { min-width: 0; width: 98vw; max-width: 98vw; }
+  }
+</style>
+<script>
+// Upload moderno para "Antes"
+(function() {
+  const btnAdd = document.getElementById('btn-add-foto-antes');
+  const modal = document.getElementById('upload-modal-antes');
+  const modalBg = modal.querySelector('.upload-modal-bg');
+  const modalClose = document.getElementById('modal-close-antes');
+  const btnTirar = document.getElementById('modal-tirar-foto-antes');
+  const btnGaleria = document.getElementById('modal-galeria-antes');
+  const inputTirar = document.getElementById('input-tirar-foto-antes');
+  const inputGaleria = document.getElementById('input-galeria-antes');
+  const previewDiv = document.getElementById('upload-preview-antes');
+  const previewImg = document.getElementById('upload-img-antes');
+  const infoDiv = document.getElementById('upload-info-antes');
+  const erroDiv = document.getElementById('upload-erro-antes');
+  const btnTrocar = document.getElementById('btn-trocar-foto-antes');
+  const btnRemover = document.getElementById('btn-remover-foto-antes');
+  let lastFocus = null;
+  let trapFocusEls = [];
+  // Modal open/close
+  function openModal() {
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.querySelector('.upload-modal-content').focus(); }, 10);
+    lastFocus = document.activeElement;
+    trapFocusEls = Array.from(modal.querySelectorAll('button, [tabindex]:not([tabindex="-1"])'));
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (lastFocus) lastFocus.focus();
+  }
+  btnAdd.onclick = openModal;
+  modalBg.onclick = closeModal;
+  modalClose.onclick = closeModal;
+  document.addEventListener('keydown', function(e) {
+    if (modal.style.display === 'flex') {
+      if (e.key === 'Escape') { closeModal(); }
+      // Trap focus
+      if (e.key === 'Tab') {
+        const focusEls = trapFocusEls;
+        if (!focusEls.length) return;
+        const first = focusEls[0], last = focusEls[focusEls.length-1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    }
+  });
+  // Modal opções
+  btnTirar.onclick = () => { inputTirar.value = ''; inputTirar.click(); };
+  btnGaleria.onclick = () => { inputGaleria.value = ''; inputGaleria.click(); };
+  // Fechar modal ao selecionar
+  inputTirar.onchange = inputGaleria.onchange = function(e) {
+    handleFile(e.target.files[0]);
+    closeModal();
+  };
+  // Preview, validação e ações
+  function handleFile(file) {
+    erroDiv.style.display = 'none';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      erroDiv.textContent = 'Por favor, selecione apenas imagens.';
+      erroDiv.style.display = 'block';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      erroDiv.textContent = 'A imagem deve ter no máximo 10 MB.';
+      erroDiv.style.display = 'block';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      previewDiv.style.display = 'flex';
+      infoDiv.innerHTML = `<b>${file.name}</b> &bull; ${(file.size/1024/1024).toFixed(2)} MB`;
+      // Salva temporariamente para submit
+      previewImg.dataset.base64 = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  btnTrocar.onclick = openModal;
+  btnRemover.onclick = function() {
+    previewDiv.style.display = 'none';
+    previewImg.src = '';
+    infoDiv.innerHTML = '';
+    previewImg.dataset.base64 = '';
+  };
+})();
+// Upload moderno para "Depois"
+(function() {
+  const btnAdd = document.getElementById('btn-add-foto-depois');
+  const modal = document.getElementById('upload-modal-depois');
+  const modalBg = modal.querySelector('.upload-modal-bg');
+  const modalClose = document.getElementById('modal-close-depois');
+  const btnTirar = document.getElementById('modal-tirar-foto-depois');
+  const btnGaleria = document.getElementById('modal-galeria-depois');
+  const inputTirar = document.getElementById('input-tirar-foto-depois');
+  const inputGaleria = document.getElementById('input-galeria-depois');
+  const previewDiv = document.getElementById('upload-preview-depois');
+  const previewImg = document.getElementById('upload-img-depois');
+  const infoDiv = document.getElementById('upload-info-depois');
+  const erroDiv = document.getElementById('upload-erro-depois');
+  const btnTrocar = document.getElementById('btn-trocar-foto-depois');
+  const btnRemover = document.getElementById('btn-remover-foto-depois');
+  let lastFocus = null;
+  let trapFocusEls = [];
+  // Modal open/close
+  function openModal() {
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.querySelector('.upload-modal-content').focus(); }, 10);
+    lastFocus = document.activeElement;
+    trapFocusEls = Array.from(modal.querySelectorAll('button, [tabindex]:not([tabindex="-1"])'));
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (lastFocus) lastFocus.focus();
+  }
+  btnAdd.onclick = openModal;
+  modalBg.onclick = closeModal;
+  modalClose.onclick = closeModal;
+  document.addEventListener('keydown', function(e) {
+    if (modal.style.display === 'flex') {
+      if (e.key === 'Escape') { closeModal(); }
+      // Trap focus
+      if (e.key === 'Tab') {
+        const focusEls = trapFocusEls;
+        if (!focusEls.length) return;
+        const first = focusEls[0], last = focusEls[focusEls.length-1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    }
+  });
+  // Modal opções
+  btnTirar.onclick = () => { inputTirar.value = ''; inputTirar.click(); };
+  btnGaleria.onclick = () => { inputGaleria.value = ''; inputGaleria.click(); };
+  // Fechar modal ao selecionar
+  inputTirar.onchange = inputGaleria.onchange = function(e) {
+    handleFile(e.target.files[0]);
+    closeModal();
+  };
+  // Preview, validação e ações
+  function handleFile(file) {
+    erroDiv.style.display = 'none';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      erroDiv.textContent = 'Por favor, selecione apenas imagens.';
+      erroDiv.style.display = 'block';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      erroDiv.textContent = 'A imagem deve ter no máximo 10 MB.';
+      erroDiv.style.display = 'block';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      previewDiv.style.display = 'flex';
+      infoDiv.innerHTML = `<b>${file.name}</b> &bull; ${(file.size/1024/1024).toFixed(2)} MB`;
+      // Salva temporariamente para submit
+      previewImg.dataset.base64 = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  btnTrocar.onclick = openModal;
+  btnRemover.onclick = function() {
+    previewDiv.style.display = 'none';
+    previewImg.src = '';
+    infoDiv.innerHTML = '';
+    previewImg.dataset.base64 = '';
+  };
+})();
+</script>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="secondary" id="btnProblema"><i class="fa-solid fa-triangle-exclamation"></i> Houve problema</button>
+          <button type="submit" class="primary"><i class="fa-solid fa-check"></i> Confirmar Execução</button>
+        </div>
+
+        <div id="boxProblema" class="card" style="display:none; background:#fff6f6;">
+          <h3><i class="fa-solid fa-circle-exclamation"></i> Descrever problema</h3>
+          <textarea id="txtProblema" placeholder="Explique o que ocorreu..."></textarea>
+          <button type="button" class="secondary" id="btnSalvarProblema"><i class="fa-regular fa-floppy-disk"></i> Registrar problema</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Página: OS (Pendentes / Confirmadas) -->
+  <section id="page-os" class="page">
+    <div class="card">
+      <h3><i class="fa-solid fa-clock-rotate-left"></i> Em espera (pendentes)</h3>
+      <div class="table-responsive">
+        <table>
+          <thead><tr><th>ID</th><th>Título</th><th>Endereço</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tbPendentes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><i class="fa-solid fa-circle-check"></i> Confirmadas</h3>
+      <div class="table-responsive">
+        <table>
+          <thead><tr><th>ID</th><th>Título</th><th>Endereço</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tbConfirmadas"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Navbar -->
+<nav>
+  <button class="active" data-target="page-mapa"><i class="fa-solid fa-map-location-dot"></i><span>Rota</span></button>
+  <button data-target="page-lista"><i class="fa-solid fa-list"></i><span>Lista</span></button>
+  <button data-target="page-exec"><i class="fa-solid fa-wrench"></i><span>Executar</span></button>
+  <button data-target="page-os"><i class="fa-solid fa-clipboard-check"></i><span>OS</span></button>
+</nav>
+
+<!-- Modal Detalhes da OS -->
+<div id="modal" class="modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Detalhes da OS</h3>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div id="modalBody">
+      <!-- preenchido via JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Dados iniciais (podem vir da API futuramente) ===== */
+const seedOS = [
+  {
+    id: "OS-101",
+    titulo: "Buraco no asfalto",
+    endereco: "Rua das Flores, 123",
+    descricao: "Buraco de ~60cm próximo à faixa de pedestres.",
+    lat: -3.7327, lng: -38.5267, /* Fortaleza centro (exemplo) */
+    status: "pendente",
+    antes: "", depois: "", problema: ""
+  },
+  {
+    id: "OS-102",
+    titulo: "Lixo acumulado",
+    endereco: "Av. Brasil, 500",
+    descricao: "Acúmulo de lixo em calçada, próximo ao ponto de ônibus.",
+    lat: -3.7377, lng: -38.5202,
+    status: "pendente",
+    antes: "", depois: "", problema: ""
+  },
+  {
+    id: "OS-103",
+    titulo: "Árvore caída",
+    endereco: "Praça Central, s/n",
+    descricao: "Galhos bloqueando metade da via.",
+    lat: -3.7283, lng: -38.5330,
+    status: "pendente",
+    antes: "", depois: "", problema: ""
+  }
+];
+
+const storageKey = "appEquipeOS";
+function loadOS(){
+  return JSON.parse(localStorage.getItem(storageKey)) || seedOS;
+}
+function saveOS(list){
+  localStorage.setItem(storageKey, JSON.stringify(list));
+}
+
+let OS = loadOS();
+
+/* ===== Navegação entre abas ===== */
+const pages = document.querySelectorAll(".page");
+const navButtons = document.querySelectorAll("nav button");
+navButtons.forEach(btn=>{
+  btn.addEventListener("click", (e)=>{
+    navButtons.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    const target = btn.dataset.target;
+    pages.forEach(p=>p.classList.remove("active"));
+    document.getElementById(target).classList.add("active");
+    if(target==="page-mapa" && map){ setTimeout(()=> map.invalidateSize(), 200); }
+  });
+});
+
+/* ===== Mapa Leaflet ===== */
+let map, markersLayer, routeLine;
+function initMap(){
+  map = L.map('map');
+  const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+
+  drawMap();
+}
+
+function drawMap(){
+  markersLayer.clearLayers();
+  const latlngs = [];
+  OS.forEach(os=>{
+    latlngs.push([os.lat, os.lng]);
+    const m = L.marker([os.lat, os.lng]).addTo(markersLayer);
+    m.bindPopup(`<b>${os.id}</b><br>${os.titulo}`);
+  });
+
+  if(routeLine){ routeLine.remove(); }
+  if(latlngs.length>1){
+    routeLine = L.polyline(latlngs, {color:'#1ca2ea', weight:4}).addTo(map);
+    map.fitBounds(routeLine.getBounds(), {padding:[20,20]});
+  } else if(latlngs.length===1){
+    map.setView(latlngs[0], 15);
+  } else {
+    map.setView([-3.7327, -38.5267], 12);
+  }
+}
+
+/* ===== Render: Lista da rota ===== */
+function renderRotaList(){
+  const cont = document.getElementById("rota-list");
+  cont.innerHTML = "";
+  OS.forEach((os, idx)=>{
+    const el = document.createElement("div");
+    el.className = "os-item";
+    el.innerHTML = `
+      <div class="os-left"><i class="fa-solid fa-${idx===0?'location-dot':'road'}"></i></div>
+      <div class="os-body">
+        <p class="os-title">${os.id} — ${os.titulo}</p>
+        <p class="os-meta"><i class="fa-solid fa-location-dot"></i> ${os.endereco}</p>
+        <div class="os-actions">
+          <button class="secondary" onclick="abrirDetalhe('${os.id}')"><i class="fa-regular fa-eye"></i> Detalhes</button>
+          <button class="secondary" onclick="focarNoMapa('${os.id}')"><i class="fa-solid fa-location-crosshairs"></i> No mapa</button>
+        </div>
+      </div>
+    `;
+    cont.appendChild(el);
+  });
+}
+
+/* ===== Render: Tabelas pendentes/confirmadas ===== */
+function renderTabelas(){
+  const tbP = document.getElementById("tbPendentes");
+  const tbC = document.getElementById("tbConfirmadas");
+  tbP.innerHTML = ""; tbC.innerHTML = "";
+
+  OS.forEach(os=>{
+    const tr = document.createElement("tr");
+    const badge = os.status==="confirmada" ? "badge-confirmada" :
+                  os.status==="problema" ? "badge-problema" : "badge-pendente";
+    tr.innerHTML = `
+      <td>${os.id}</td>
+      <td>${os.titulo}</td>
+      <td>${os.endereco}</td>
+      <td><span class="badge ${badge}">${os.status}</span></td>
+      <td>
+        <button class="secondary" onclick="abrirDetalhe('${os.id}')"><i class="fa-regular fa-eye"></i> Ver</button>
+      </td>
+    `;
+    if(os.status==="confirmada") tbC.appendChild(tr); else tbP.appendChild(tr);
+  });
+}
+
+/* ===== Form Execução ===== */
+const osSelect = document.getElementById("osSelect");
+function preencherSelectOS(){
+  osSelect.innerHTML = `<option value="">Selecione...</option>`;
+  OS.forEach(os=>{
+    osSelect.innerHTML += `<option value="${os.id}">${os.id} — ${os.titulo}</option>`;
+  });
+}
+function getOSById(id){ return OS.find(o=>o.id===id); }
+
+document.getElementById("btnDetalhes").addEventListener("click", ()=>{
+  const id = osSelect.value; if(!id) return alert("Selecione uma OS.");
+  abrirDetalhe(id);
+});
+document.getElementById("btnLocalizar").addEventListener("click", ()=>{
+  const id = osSelect.value; if(!id) return alert("Selecione uma OS.");
+  focarNoMapa(id);
+});
+
+const boxProblema = document.getElementById("boxProblema");
+document.getElementById("btnProblema").addEventListener("click", ()=>{
+  boxProblema.style.display = boxProblema.style.display==="none" ? "block" : "none";
+});
+
+document.getElementById("btnSalvarProblema").addEventListener("click", ()=>{
+  const id = osSelect.value; if(!id) return alert("Selecione uma OS.");
+  const os = getOSById(id);
+  os.status = "problema";
+  os.problema = document.getElementById("txtProblema").value.trim();
+  saveOS(OS);
+  renderTudo();
+  alert("Problema registrado para " + id);
+});
+
+/* Upload antes/depois + confirmar execução */
+document.getElementById("execForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const id = osSelect.value; if(!id) return alert("Selecione uma OS.");
+  const os = getOSById(id);
+
+  const antesFile = document.getElementById("fotoAntes").files[0];
+  const depoisFile = document.getElementById("fotoDepois").files[0];
+
+  if(antesFile) os.antes = await toBase64(antesFile);
+  if(depoisFile) os.depois = await toBase64(depoisFile);
+
+  os.status = "confirmada";
+  saveOS(OS);
+  renderTudo();
+  alert("Execução confirmada para " + id);
+  e.target.reset();
+  boxProblema.style.display = "none";
+});
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=> res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+/* ===== Modal Detalhe ===== */
+const modal = document.getElementById("modal");
+const modalBody = document.getElementById("modalBody");
+const modalTitle = document.getElementById("modalTitle");
+document.getElementById("modalClose").addEventListener("click", ()=> modal.classList.remove("active"));
+
+function abrirDetalhe(id){
+  const os = getOSById(id);
+  modalTitle.textContent = `${os.id} — ${os.titulo}`;
+  modalBody.innerHTML = `
+    ${os.depois ? `<img class="detail-photo" src="${os.depois}" alt="Foto depois">` :
+                   os.antes ? `<img class="detail-photo" src="${os.antes}" alt="Foto antes">` :
+                   `<div class="detail-photo"></div>`}
+    <div class="card" style="margin-top:10px">
+      <p><b>Endereço:</b> ${os.endereco}</p>
+      <p><b>Descrição:</b> ${os.descricao}</p>
+      <p><b>Status:</b> <span class="badge ${os.status==='confirmada'?'badge-confirmada':os.status==='problema'?'badge-problema':'badge-pendente'}">${os.status}</span></p>
+      ${os.problema ? `<p><b>Problema informado:</b> ${os.problema}</p>` : ""}
+      <div class="actions">
+        <button class="secondary" onclick="focarNoMapa('${os.id}')"><i class="fa-solid fa-location-crosshairs"></i> No mapa</button>
+        <button class="primary" onclick="irParaExec('${os.id}')"><i class="fa-solid fa-wrench"></i> Executar/Confirmar</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add("active");
+}
+function irParaExec(id){
+  modal.classList.remove("active");
+  // abrir aba Execução e pré-selecionar
+  document.querySelector('nav button[data-target="page-exec"]').click();
+  osSelect.value = id;
+}
+function focarNoMapa(id){
+  const os = getOSById(id);
+  document.querySelector('nav button[data-target="page-mapa"]').click();
+  setTimeout(()=>{
+    if(map){ map.setView([os.lat, os.lng], 16); }
+  }, 250);
+}
+
+/* ===== Render geral ===== */
+function renderTudo(){
+  preencherSelectOS();
+  renderRotaList();
+  renderTabelas();
+  drawMap();
+}
+
+/* ===== Inicialização ===== */
+document.addEventListener("DOMContentLoaded", ()=>{
+  // inicia mapa quando Leaflet carregar
+  const waitLeaflet = setInterval(()=>{
+    if(window.L){
+      clearInterval(waitLeaflet);
+      initMap();
+    }
+  }, 50);
+  renderTudo();
+});
+
+/* (Opcional) clique fora do modal para fechar */
+modal.addEventListener("click", (e)=>{
+  if(e.target===modal) modal.classList.remove("active");
+});
+</script>
+</body>
+</html>

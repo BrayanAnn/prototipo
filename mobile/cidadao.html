@@ -1,308 +1,595 @@
+      </form>
+      <div id="foto-enviada-section" style="display:none; margin-top:18px;">
+        <label style="font-weight:600;color:#444;"><i class="fa-solid fa-image"></i> Foto enviada</label>
+        <img id="foto-enviada" src="" alt="Foto enviada" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.08);margin-top:6px;" />
+      </div>
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prefeitura - Registro de Ocorrências</title>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #f4f6f9;
-    color: #333;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Prefeitura - Registro de Ocorrências</title>
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f4f6f9;
+        color: #333;
+      }
 
-  /* Header fixo com blur */
-  header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 119, 204, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    color: white;
-    padding: 15px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 1000;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  }
+      /* Header fixo com blur */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 119, 204, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        z-index: 1000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
 
-  main {
-    padding: 80px 15px 80px; /* espaço para header + navbar */
-  }
+      main {
+        padding: 80px 15px 80px; /* espaço para header + navbar */
+      }
 
-  section {
-    display: none;
-  }
+      section {
+        display: none;
+      }
 
-  section.active {
-    display: block;
-    animation: fadeIn 0.3s ease-in-out;
-  }
+      section.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+      }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-  /* Cards */
-  .card {
-    background: white;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  }
+      /* Cards */
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
 
-  .card h3 {
-    margin: 0 0 8px;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #0077cc;
-  }
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #0077cc;
+      }
 
-  .card p {
-    margin: 4px 0;
-    font-size: 14px;
-  }
+      .card p {
+        margin: 4px 0;
+        font-size: 14px;
+      }
 
-  .city-images {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  margin-top: 10px;
-}
+      .city-images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
 
-.city-images img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  transition: transform 0.3s;
-}
+      .city-images img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
+      }
 
-.city-images img:hover {
-  transform: scale(1.05);
-}
+      .city-images img:hover {
+        transform: scale(1.05);
+      }
 
-  /* Formulário */
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
+      /* Formulário */
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
 
-  label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #444;
-    margin-bottom: 4px;
-  }
+      label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 4px;
+      }
 
-  input, textarea, select {
-    padding: 14px 12px 14px 12px; /* padding-top, padding-right, padding-bottom, padding-left */
-    padding-right: 20px; /* 👈 adiciona espaçamento extra à direita */
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    font-size: 15px;
-    width: 100%;
-    background: #fff;
-    transition: border 0.2s, box-shadow 0.2s;
-    box-sizing: border-box; /* garante que padding não aumente largura */
-  }
+      input,
+      textarea,
+      select {
+        padding: 14px 12px 14px 12px; /* padding-top, padding-right, padding-bottom, padding-left */
+        padding-right: 20px; /* 👈 adiciona espaçamento extra à direita */
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        font-size: 15px;
+        width: 100%;
+        background: #fff;
+        transition: border 0.2s, box-shadow 0.2s;
+        box-sizing: border-box; /* garante que padding não aumente largura */
+      }
 
-  input:focus, textarea:focus, select:focus {
-    outline: none;
-    border: 1px solid #0077cc;
-    box-shadow: 0 0 4px rgba(0, 119, 204, 0.3);
-  }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border: 1px solid #0077cc;
+        box-shadow: 0 0 4px rgba(0, 119, 204, 0.3);
+      }
 
-  textarea {
-    resize: none;
-    min-height: 100px;
-  }
+      textarea {
+        resize: none;
+        min-height: 100px;
+      }
 
-  input[type="file"] {
-    padding: 10px;
-    font-size: 14px;
-  }
+      input[type='file'] {
+        padding: 10px;
+        font-size: 14px;
+      }
 
-  button.submit {
-    background: linear-gradient(135deg, #0077cc, #005fa3);
-    color: white;
-    border: none;
-    padding: 14px;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, background 0.3s;
-  }
+      button.submit {
+        background: linear-gradient(135deg, #0077cc, #005fa3);
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, background 0.3s;
+      }
 
-  button.submit:hover {
-    background: linear-gradient(135deg, #0099ff, #0077cc);
-    transform: translateY(-2px);
-  }
+      button.submit:hover {
+        background: linear-gradient(135deg, #0099ff, #0077cc);
+        transform: translateY(-2px);
+      }
 
-  /* Navbar inferior fixa e translúcida */
-  nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex;
-    justify-content: space-around;
-    border-top: 1px solid rgba(200,200,200,0.5);
-    padding: 8px 0;
-    z-index: 1000;
-  }
+      /* Navbar inferior fixa e translúcida */
+      nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid rgba(200, 200, 200, 0.5);
+        padding: 8px 0;
+        z-index: 1000;
+      }
 
-  nav button {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 6px;
-    text-align: center;
-    font-size: 12px;
-    color: #666;
-    cursor: pointer;
-  }
+      nav button {
+        flex: 1;
+        background: none;
+        border: none;
+        padding: 6px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        cursor: pointer;
+      }
 
-  nav button i {
-    font-size: 18px;
-    display: block;
-    margin-bottom: 4px;
-  }
+      nav button i {
+        font-size: 18px;
+        display: block;
+        margin-bottom: 4px;
+      }
 
-  nav button.active {
-    color: #0077cc;
-    font-weight: bold;
-  }
+      nav button.active {
+        color: #0077cc;
+        font-weight: bold;
+      }
 
-  /* Responsividade para telas menores */
-  @media (max-width: 480px) {
-    input, textarea, select, button.submit {
-      font-size: 14px;
-      padding: 12px;
-      padding-right: 18px; /* mantém espaçamento proporcional em mobile */
-    }
+      /* Responsividade para telas menores */
+      @media (max-width: 480px) {
+        input,
+        textarea,
+        select,
+        button.submit {
+          font-size: 14px;
+          padding: 12px;
+          padding-right: 18px; /* mantém espaçamento proporcional em mobile */
+        }
 
-    label {
-      font-size: 13px;
-    }
-  }
+        label {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>App Cidadão</header>
 
-</style>
-
-</head>
-<body>
-  <header>App Cidadão</header>
-
-  <main>
-    <!-- Home -->
-    <section id="home" class="active">
-      <div class="card">
-        <h3><i class="fa-solid fa-circle-info"></i> Sobre o serviço</h3>
-        <p>Este sistema permite que você registre ocorrências urbanas como buracos no asfalto, lixo em locais indevidos e árvores caídas. Sua participação ajuda a prefeitura a agir mais rápido.</p>
-      </div>
-
-      <div class="card">
-        <h3><i class="fa-solid fa-city"></i> Nossa Cidade</h3>
-        <p>Conheça nossa cidade, seus pontos turísticos e principais bairros. Incentivamos o cuidado com o ambiente urbano e a preservação dos espaços públicos.</p>
-        
-        <div class="city-images">
-        <img src="cidade1.jpg" alt="Cidade - Centro" />
-        <img src="cidade2.jpg" alt="Cidade - Parque" />
-        <img src="cidade3.jpg" alt="Cidade - Praça" />
+    <main>
+      <!-- Home -->
+      <section id="home" class="active">
+        <div class="card">
+          <h3>
+            <i class="fa-solid fa-circle-info"></i> Sobre o serviço
+          </h3>
+          <p>
+            Este sistema permite que você registre ocorrências urbanas
+            como buracos no asfalto, lixo em locais indevidos e
+            árvores caídas. Sua participação ajuda a prefeitura a agir
+            mais rápido.
+          </p>
         </div>
-    </div>
-    </section>
 
+        <div class="card">
+          <h3><i class="fa-solid fa-city"></i> Nossa Cidade</h3>
+          <p>
+            Conheça nossa cidade, seus pontos turísticos e principais
+            bairros. Incentivamos o cuidado com o ambiente urbano e a
+            preservação dos espaços públicos.
+          </p>
 
-    <!-- Registro -->
-    <section id="registrar">
-      <form>
-        <label><i class="fa-solid fa-user"></i> Nome</label>
-        <input type="text" placeholder="Seu nome">
+          <div class="city-images">
+            <img src="cidade1.jpg" alt="Cidade - Centro" />
+            <img src="cidade2.jpg" alt="Cidade - Parque" />
+            <img src="cidade3.jpg" alt="Cidade - Praça" />
+          </div>
+        </div>
+      </section>
 
-        <label><i class="fa-solid fa-envelope"></i> Email</label>
-        <input type="email" placeholder="Seu email">
+      <!-- Registro -->
+      <section id="registrar">
+        <form>
+          <label><i class="fa-solid fa-user"></i> Nome</label>
+          <input type="text" placeholder="Seu nome" />
 
-        <label><i class="fa-solid fa-map-marker-alt"></i> Local da ocorrência</label>
-        <input type="text" placeholder="Endereço ou ponto de referência">
+          <label><i class="fa-solid fa-envelope"></i> Email</label>
+          <input type="email" placeholder="Seu email" />
 
-        <label><i class="fa-solid fa-list-check"></i> Tipo de ocorrência</label>
-        <select>
-          <option>Buraco no asfalto</option>
-          <option>Lixo em local indevido</option>
-          <option>Árvore caída</option>
-          <option>Outros</option>
-        </select>
+          <label
+            ><i class="fa-solid fa-map-marker-alt"></i> Local da
+            ocorrência</label
+          >
+          <input
+            type="text"
+            placeholder="Endereço ou ponto de referência"
+          />
 
-        <label><i class="fa-solid fa-align-left"></i> Descrição</label>
-        <textarea rows="3" placeholder="Descreva a ocorrência"></textarea>
+          <label
+            ><i class="fa-solid fa-list-check"></i> Tipo de
+            ocorrência</label
+          >
+          <select>
+            <option>Buraco no asfalto</option>
+            <option>Lixo em local indevido</option>
+            <option>Árvore caída</option>
+            <option>Outros</option>
+          </select>
 
-        <label><i class="fa-solid fa-camera"></i> Foto</label>
-        <input type="file" accept="image/*">
+          <label
+            ><i class="fa-solid fa-align-left"></i> Descrição</label
+          >
+          <textarea
+            rows="3"
+            placeholder="Descreva a ocorrência"
+          ></textarea>
 
-        <button type="submit" class="submit"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
-      </form>
-    </section>
+          <label><i class="fa-solid fa-camera"></i> Foto</label>
+          <!-- Componente moderno de upload de imagem -->
+          <div id="upload-container">
+            <button type="button" id="btn-add-foto" class="upload-btn-modern" aria-haspopup="dialog">
+              <i class="fa-solid fa-camera"></i> Adicionar foto
+            </button>
+            <div id="upload-preview" style="display:none;flex-direction:column;align-items:center;margin-top:10px;">
+              <img id="upload-img" src="" alt="Prévia da foto" style="max-width:100%;max-height:180px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);margin-bottom:8px;" />
+              <div id="upload-info" style="font-size:14px;color:#444;margin-bottom:8px;"></div>
+              <div style="display:flex;gap:10px;width:100%;justify-content:center;">
+                <button type="button" id="btn-trocar-foto" class="upload-action">Trocar</button>
+                <button type="button" id="btn-remover-foto" class="upload-action">Remover</button>
+              </div>
+            </div>
+            <div id="upload-erro" aria-live="polite" style="color:#c62828;font-size:14px;margin-top:8px;display:none;"></div>
+            <!-- Modal -->
+            <div id="upload-modal" class="upload-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1" style="display:none;">
+              <div class="upload-modal-bg"></div>
+              <div class="upload-modal-content" role="document">
+                <h4 id="modal-title" style="margin:0 0 18px 0;font-size:18px;color:#1976d2;">Adicionar foto</h4>
+                <button type="button" class="upload-modal-option" id="modal-tirar-foto"><i class="fa-solid fa-camera"></i> Tirar foto</button>
+                <button type="button" class="upload-modal-option" id="modal-galeria"><i class="fa-solid fa-image"></i> Selecionar da galeria</button>
+                <button type="button" class="upload-modal-close" id="modal-close" aria-label="Fechar">&times;</button>
+              </div>
+              <input id="input-tirar-foto" type="file" accept="image/*" capture="environment" style="display:none;">
+              <input id="input-galeria" type="file" accept="image/*" style="display:none;">
+            </div>
+          </div>
+          <style>
+            #upload-container { margin-bottom: 8px; }
+            #upload-container > .upload-btn-modern {
+              margin-top: 12px;
+            }
+            .upload-btn-modern {
+              background: linear-gradient(135deg, #1976d2, #2196f3);
+              color: #fff;
+              border: none;
+              border-radius: 10px;
+              font-size: 14px;
+              font-weight: 600;
+              padding: 9px 0;
+              width: 100%;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              cursor: pointer;
+              transition: background 0.2s, transform 0.2s;
+              margin-bottom: 0;
+              outline: none;
+              min-height: 38px;
+            }
+            .upload-btn-modern:active { background: #1565c0; }
+            .upload-action {
+              background: #f5f6fa;
+              color: #1976d2;
+              border: 1px solid #1976d2;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              padding: 6px 12px;
+              cursor: pointer;
+              transition: background 0.2s, color 0.2s;
+              min-height: 32px;
+            }
+            .upload-action:hover { background: #e3eafc; }
+            .upload-modal {
+              position: fixed;
+              top: 0; left: 0; right: 0; bottom: 0;
+              z-index: 2000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              animation: fadeInModal 0.2s;
+            }
+            .upload-modal-bg {
+              position: absolute;
+              top: 0; left: 0; right: 0; bottom: 0;
+              background: rgba(0,0,0,0.18);
+              border-radius: 0;
+              z-index: 1;
+              animation: fadeInModalBg 0.2s;
+            }
+            .upload-modal-content {
+              position: relative;
+              background: #fff;
+              border-radius: 18px;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+              padding: 28px 18px 18px 18px;
+              min-width: 240px;
+              max-width: 90vw;
+              width: 320px;
+              z-index: 2;
+              display: flex;
+              flex-direction: column;
+              align-items: stretch;
+              animation: slideUpModal 0.22s;
+            }
+            .upload-modal-option {
+              background: #f5f6fa;
+              color: #1976d2;
+              border: 1px solid #1976d2;
+              border-radius: 8px;
+              font-size: 16px;
+              font-weight: 600;
+              padding: 14px 0;
+              margin-bottom: 12px;
+              cursor: pointer;
+              transition: background 0.2s, color 0.2s;
+              outline: none;
+            }
+            .upload-modal-option:hover { background: #e3eafc; }
+            .upload-modal-close {
+              position: absolute;
+              top: 10px; right: 14px;
+              background: none;
+              border: none;
+              color: #888;
+              font-size: 26px;
+              cursor: pointer;
+              border-radius: 50%;
+              width: 36px; height: 36px;
+              transition: background 0.2s;
+              z-index: 3;
+            }
+            .upload-modal-close:hover { background: #f5f6fa; }
+            @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes fadeInModalBg { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUpModal { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            @media (max-width: 480px) {
+              .upload-modal-content { min-width: 0; width: 98vw; max-width: 98vw; }
+            }
+          </style>
 
-    <!-- Ocorrências -->
-    <section id="ocorrencias">
-      <div class="card">
-        <h3><i class="fa-solid fa-road"></i> Buraco no asfalto</h3>
-        <p><i class="fa-solid fa-location-dot"></i> Rua das Flores, nº 123</p>
-        <p><i class="fa-solid fa-clock"></i> Registrado em: 28/08/2025</p>
-        <p><i class="fa-solid fa-hourglass-half"></i> Status: Em análise</p>
-      </div>
+          <button type="submit" class="submit">
+            <i class="fa-solid fa-paper-plane"></i> Enviar
+          </button>
+        </form>
+      </section>
 
-      <div class="card">
-        <h3><i class="fa-solid fa-dumpster"></i> Lixo em local indevido</h3>
-        <p><i class="fa-solid fa-location-dot"></i> Av. Brasil, próximo ao nº 500</p>
-        <p><i class="fa-solid fa-clock"></i> Registrado em: 27/08/2025</p>
-        <p><i class="fa-solid fa-check-circle"></i> Status: Resolvido</p>
-      </div>
-    </section>
-  </main>
+      <!-- Ocorrências -->
+      <section id="ocorrencias">
+        <div class="card">
+          <h3><i class="fa-solid fa-road"></i> Buraco no asfalto</h3>
+          <p>
+            <i class="fa-solid fa-location-dot"></i> Rua das Flores,
+            nº 123
+          </p>
+          <p>
+            <i class="fa-solid fa-clock"></i> Registrado em:
+            28/08/2025
+          </p>
+          <p>
+            <i class="fa-solid fa-hourglass-half"></i> Status: Em
+            análise
+          </p>
+        </div>
 
-  <!-- Navegação -->
-  <nav>
-    <button onclick="mostrarPagina('home')" class="active">
-      <i class="fa-solid fa-house"></i>
-      Home
-    </button>
-    <button onclick="mostrarPagina('registrar')">
-      <i class="fa-solid fa-pen-to-square"></i>
-      Registrar
-    </button>
-    <button onclick="mostrarPagina('ocorrencias')">
-      <i class="fa-solid fa-list"></i>
-      Ocorrências
-    </button>
-  </nav>
+        <div class="card">
+          <h3>
+            <i class="fa-solid fa-dumpster"></i> Lixo em local
+            indevido
+          </h3>
+          <p>
+            <i class="fa-solid fa-location-dot"></i> Av. Brasil,
+            próximo ao nº 500
+          </p>
+          <p>
+            <i class="fa-solid fa-clock"></i> Registrado em:
+            27/08/2025
+          </p>
+          <p>
+            <i class="fa-solid fa-check-circle"></i> Status: Resolvido
+          </p>
+        </div>
+      </section>
+    </main>
 
-  <script>
-    function mostrarPagina(pagina) {
-      document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
-      document.getElementById(pagina).classList.add("active");
+    <!-- Navegação -->
+    <nav>
+      <button onclick="mostrarPagina('home')" class="active">
+        <i class="fa-solid fa-house"></i>
+        Home
+      </button>
+      <button onclick="mostrarPagina('registrar')">
+        <i class="fa-solid fa-pen-to-square"></i>
+        Registrar
+      </button>
+      <button onclick="mostrarPagina('ocorrencias')">
+        <i class="fa-solid fa-list"></i>
+        Ocorrências
+      </button>
+    </nav>
 
-      document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
-      event.target.closest("button").classList.add("active");
-    }
-  </script>
-</body>
+    <script>
+      // Upload moderno de imagem com modal, preview, validação e acessibilidade
+      (function() {
+        const btnAdd = document.getElementById('btn-add-foto');
+        const modal = document.getElementById('upload-modal');
+        const modalBg = modal.querySelector('.upload-modal-bg');
+        const modalClose = document.getElementById('modal-close');
+        const btnTirar = document.getElementById('modal-tirar-foto');
+        const btnGaleria = document.getElementById('modal-galeria');
+        const inputTirar = document.getElementById('input-tirar-foto');
+        const inputGaleria = document.getElementById('input-galeria');
+        const previewDiv = document.getElementById('upload-preview');
+        const previewImg = document.getElementById('upload-img');
+        const infoDiv = document.getElementById('upload-info');
+        const erroDiv = document.getElementById('upload-erro');
+        const btnTrocar = document.getElementById('btn-trocar-foto');
+        const btnRemover = document.getElementById('btn-remover-foto');
+        let lastFocus = null;
+        let trapFocusEls = [];
+        // Modal open/close
+        function openModal() {
+          modal.style.display = 'flex';
+          setTimeout(() => { modal.querySelector('.upload-modal-content').focus(); }, 10);
+          lastFocus = document.activeElement;
+          trapFocusEls = Array.from(modal.querySelectorAll('button, [tabindex]:not([tabindex="-1"])'));
+          document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+          modal.style.display = 'none';
+          document.body.style.overflow = '';
+          if (lastFocus) lastFocus.focus();
+        }
+        btnAdd.onclick = openModal;
+        modalBg.onclick = closeModal;
+        modalClose.onclick = closeModal;
+        document.addEventListener('keydown', function(e) {
+          if (modal.style.display === 'flex') {
+            if (e.key === 'Escape') { closeModal(); }
+            // Trap focus
+            if (e.key === 'Tab') {
+              const focusEls = trapFocusEls;
+              if (!focusEls.length) return;
+              const first = focusEls[0], last = focusEls[focusEls.length-1];
+              if (e.shiftKey) {
+                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+              } else {
+                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+              }
+            }
+          }
+        });
+        // Modal opções
+        btnTirar.onclick = () => { inputTirar.value = ''; inputTirar.click(); };
+        btnGaleria.onclick = () => { inputGaleria.value = ''; inputGaleria.click(); };
+        // Fechar modal ao selecionar
+        inputTirar.onchange = inputGaleria.onchange = function(e) {
+          handleFile(e.target.files[0]);
+          closeModal();
+        };
+        // Preview, validação e ações
+        function handleFile(file) {
+          erroDiv.style.display = 'none';
+          if (!file) return;
+          if (!file.type.startsWith('image/')) {
+            erroDiv.textContent = 'Por favor, selecione apenas imagens.';
+            erroDiv.style.display = 'block';
+            return;
+          }
+          if (file.size > 10 * 1024 * 1024) {
+            erroDiv.textContent = 'A imagem deve ter no máximo 10 MB.';
+            erroDiv.style.display = 'block';
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewDiv.style.display = 'flex';
+            infoDiv.innerHTML = `<b>${file.name}</b> &bull; ${(file.size/1024/1024).toFixed(2)} MB`;
+          };
+          reader.readAsDataURL(file);
+        }
+        btnTrocar.onclick = openModal;
+        btnRemover.onclick = function() {
+          previewDiv.style.display = 'none';
+          previewImg.src = '';
+          infoDiv.innerHTML = '';
+        };
+      })();
+      function mostrarPagina(pagina) {
+        document
+          .querySelectorAll('section')
+          .forEach((sec) => sec.classList.remove('active'));
+        document.getElementById(pagina).classList.add('active');
+
+        document
+          .querySelectorAll('nav button')
+          .forEach((btn) => btn.classList.remove('active'));
+        event.target.closest('button').classList.add('active');
+      }
+    </script>
+  </body>
 </html>
